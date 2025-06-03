@@ -199,21 +199,21 @@ class ZKPushProtocolController(http.Controller):
         1. If GET request, initialize the device and return its configuration.
         2. If POST request, process the data upload from the device.
         """
-        # try:
-        serial_number = kwargs.get('SN')
-        print(f"Serial Number113: {serial_number} in cdata")
-        #     if not serial_number:
-        #         return Response("Serial number required", status=400)
+        try:
+            serial_number = kwargs.get('SN')
+            print(f"Serial Number113: {serial_number} in cdata")
+            if not serial_number:
+                return Response("Serial number required", status=400)
 
-        #     device = self.update_or_get_device(serial_number , kwargs)
-        #     if not device:
-        #         return Response("Device not found", status=400)
+            device = self.update_or_get_device(serial_number , kwargs)
+            if not device:
+                return Response("Device not found", status=400)
             
-        #     device.update_communication_time()
-        #     return self._handle_data_upload(device, kwargs)
-        # except Exception as e:
-        #     _logger.error(f"Error in cdata: {str(e)}", exc_info=True)
-        #     return Response("ERROR", status=500)
+            device.update_communication_time()
+            return self._handle_data_upload(device, kwargs)
+        except Exception as e:
+            _logger.error(f"Error in cdata: {str(e)}", exc_info=True)
+            return Response("ERROR", status=500)
         return "OK"
 
     @http.route('/iclock/edata', type='http', auth='none', methods=['POST'], csrf=False)
