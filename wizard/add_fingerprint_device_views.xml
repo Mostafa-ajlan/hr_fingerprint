@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_fingerprint_device" model="ir.ui.view">
+        <field name="name">Add Fingerprint Device</field>
+        <field name="model">add.fingerprint.device</field>
+        <field name="arch" type="xml">
+            <form string="">
+                <!-- Title and Connection Type -->
+                <div class="oe_title">
+                    <h1><field name="name" placeholder="Display Name"/></h1>
+                </div>
+                <group name="connection_mode">
+                    <field name="connection_mode" widget="radio"/>
+                </group>
+                <!-- Direct Connection Fields -->
+                <group string="Direct Connection" invisible="connection_mode != 'direct'">
+                    <field name="connection_type" widget="radio" string="Connection Type"/>
+                    <field name="ip_address" placeholder="192.168.1.10" invisible="connection_type != 'network'"/>
+                    <field name="port" placeholder="4370" invisible="connection_type != 'network'"/>
+                    <field name="protocol" widget="selection" invisible="connection_type != 'network'"/>
+                    <field name="connection_timeout" string="Timeout (sec)"/>
+                </group>
+                 <!-- IoT Connection Fields -->
+                <group string="IoT Connection" invisible="connection_mode != 'iot'">
+                    <field name="iot_device_id"/>
+                </group>
+
+                <group string="Push Connection" invisible="connection_mode != 'push'">
+                    <field name="serial_number" placeholder="Device Serial Number"/>
+                </group>
+
+                <footer>
+                    <widget name="fingerprint_button_action" action="save_fingerprint_device_info" text="Connect And Save"/>
+                    <button class="btn btn-secondary" string="Close" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="add_fingerprint_device" model="ir.actions.act_window">
+        <field name="name">Add Fingerprint Device</field>
+        <field name="res_model">add.fingerprint.device</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_fingerprint_device"/>
+        <field name="target">new</field>
+    </record>
+</odoo>

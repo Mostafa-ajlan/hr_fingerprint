@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- View fingerprint.device.command View List -->
+    <record id="view_fingerprint_device_command_list" model="ir.ui.view">
+        <field name="name">view.zk.device.command.list</field>
+        <field name="model">zk.device.command</field>
+        <field name="arch" type="xml">
+              <list>
+                <field name="name"/>
+                <field name="cmd_id"/>
+                <field name="command_type"/>
+                <field name="user_id"/>
+                <field name="shell_cmd"/>
+                <field name="execution_date"/>
+                <field name="state"/>
+                
+            </list>
+        </field>
+    </record>
+
+    <!-- View fingerprint.device.command form -->
+    <record id="view_fingerprint_device_command_form" model="ir.ui.view">
+        <field name="name">view.zk.device.command.form</field>
+        <field name="model">zk.device.command</field>
+        <field name="arch" type="xml">
+            <form string="ZKTeco commands">
+        <sheet>
+          <group>
+            <field name="name"/>
+            <field name="cmd_id"/>
+            <field name="device_id"/>
+            <field name="command_type"/>
+          </group>
+
+          <!-- Update User Info -->
+          <group string="User Info" invisible="command_type != 'update_userinfo'">
+            <field name="user_ids"/>
+            <field name="user_id"/>
+            <field name="name_value"/>
+            <field name="passwd"/>
+            <field name="card"/>
+            <field name="group"/>
+            <field name="tz"/>
+            <field name="pri"/>
+          </group>
+
+          <!-- User Photo -->
+          <group string="User Photo" invisible="command_type != 'update_userpic'">
+            <field name="user_ids"/>
+            <field name="user_id"/>
+            <field name="photo_size"/>
+            <field name="photo_content"/>
+          </group>
+
+          <!-- SMS -->
+          <group string="Send SMS" invisible="command_type != 'update_sms'">
+            <field name="sms_message"/>
+            <field name="sms_tag"/>
+            <field name="sms_uid"/>
+            <field name="sms_min"/>
+            <field name="sms_start_time"/>
+          </group>
+
+          <!-- Delete -->
+          <group string="Delete User" invisible="command_type != 'delete_userinfo'">
+            <field name="user_ids"/>
+            <field name="user_id"/>
+          </group>
+          <group string="Delete SMS" invisible="command_type != 'delete_sms'">
+            <field name="sms_uid"/>
+          </group>
+
+          <!-- Query -->
+          <group string="Query Attendance" invisible="command_type != 'query_attlog'">
+            <field name="start_time"/>
+            <field name="end_time"/>
+          </group>
+          <group string="Query User Info" invisible="command_type not in ['query_userinfo', 'query_userpic']">
+            <field name="user_ids"/>
+            <field name="user_id"/>
+          </group>
+
+          <!-- Verify -->
+          <group string="Verify Sum" invisible="command_type != 'verify_sum'">
+            <field name="start_time"/>
+            <field name="end_time"/>
+          </group>
+
+          <!-- Set Option -->
+          <group string="Set Option" invisible="command_type != 'set_option'">
+            <field name="option_key"/>
+            <field name="option_value"/>
+          </group>
+
+          <!-- Enroll Fingerprint -->
+          <group string="Enroll FP"  invisible="command_type != 'enroll_fp'">
+            <field name="user_ids"/>
+            <field name="user_id"/>
+            <field name="fp_id"/>
+            <field name="retry"/>
+            <field name="overwrite"/>
+          </group>
+
+          <!-- Shell Command -->
+          <group string="Shell Command" invisible="command_type != 'shell'">
+            <field name="shell_cmd"/>
+          </group>
+
+          <!-- Final Result -->
+          <group>
+            <field name="generated_command" readonly="1" widget="text"/>
+          </group>
+        </sheet>
+      </form>
+        </field>
+    </record>
+
+    <!-- View fingerprint.device.command search -->
+    <record id="view_fingerprint_device_command_search" model="ir.ui.view">
+        <field name="name">view.zk.device.command.search</field>
+        <field name="model">zk.device.command</field>
+        <field name="arch" type="xml">
+            <search>
+                <group expand="1" string="Group By">
+                    <!-- <filter string="Name" name="name" domain="[]" context="{'group_by':'name'}"/> -->
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action fingerprint.device.command -->
+    <record id="action_fingerprint_device_command" model="ir.actions.act_window">
+        <field name="name">Fingerprint Device Command</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">zk.device.command</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="oe_view_nocontent_create">
+                There is no examples click here to add new Fingerprint Device Command.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_fingerprint_device_command" 
+              name="commands" 
+              parent="menu_fingerprint_root"/>
+              
+    <menuitem id="menu_fingerprint_device_command_data" 
+              name="commands Data" 
+              parent="menu_fingerprint_device_command"
+              action="action_fingerprint_device_command"/>
+
+</odoo>

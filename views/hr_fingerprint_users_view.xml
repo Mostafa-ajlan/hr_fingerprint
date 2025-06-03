@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree View for Biometric Users -->
+    <record id="view_hr_fingerprint_user_tree" model="ir.ui.view">
+        <field name="name">hr.fingerprint.user.tree</field>
+        <field name="model">hr.fingerprint.user</field>
+        <field name="arch" type="xml">
+            <list >
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="uid"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View for Biometric Users -->
+    <record id="view_hr_fingerprint_user_form" model="ir.ui.view">
+        <field name="name">hr.fingerprint.user.form</field>
+        <field name="model">hr.fingerprint.user</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="partner_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group>
+                            <field name="image" widget="image" class="oe_avatar"/>
+                        </group>
+                    </group>
+                    <group name="basic_info" string="Basic Information">
+                        <group>
+                            <field name="device_id"/>
+                            <field name="user_id"/>
+                            <field name="card"/>
+                        </group>
+                        <group>
+                            <field name="group_id"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page name="user_attendance" string="Attendance">
+                            <field name="attendance_ids" widget="one2many">
+                                <list editable="bottom">
+                                    <field name="user_id"/>
+                                    <field name="device_id"/>
+                                    <field name="punching_time"/>
+                                    <field name="punch_type"/>
+                                    <field name="attendance_type"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <!-- Action for Biometric Users -->
+    <record id="action_hr_fingerprint_user" model="ir.actions.act_window">
+        <field name="name">Action Fingerprint Users</field>
+        <field name="res_model">hr.fingerprint.user</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <!-- Menu Item for Biometric Users -->
+    <menuitem id="hr_fingerprint_user_menu" name="Fingerprint Users" parent="menu_fingerprint_root"/>
+    <menuitem id="hr_fingerprint_user_menu_action" name="Fingerprint Users" action="action_hr_fingerprint_user" parent="hr_fingerprint_user_menu"/>
+</odoo>

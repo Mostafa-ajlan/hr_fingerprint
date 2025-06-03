@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_fingerprints.FingerprintButtonAction" owl="1">
+        <button 
+            type="button" 
+            t-att-class="props.action == 'save_fingerprint_device_info' ? 'btn btn-primary' : 'btn btn-secondary'"
+            t-on-click.stop="onClickFingerprintButton"
+            style="margin-right: 5px; padding-left: 5px; padding-right: 10px;"
+        >
+        <t t-if="props.icon and props.icon !== ''">
+            <i t-att-class="'fa ' + props.icon" class="me-1" />
+        </t>
+        <t t-esc="props.text" />
+        </button>
+    </t>
+
+</templates>

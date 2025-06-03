@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="iot_fingerprint_machine_view_form" model="ir.ui.view">
+        <field name="name">iot.device.fingerprint.form</field>
+        <field name="model">iot.device</field>
+        <field name="inherit_id" ref="iot.iot_device_view_form"/>
+        <field name="arch" type="xml">
+            <!-- إضافة الحقول تحت حقل type مباشرة -->
+            <xpath expr="//field[@name='type']" position="after">
+                <field name="ip_address"
+                    invisible="type !='biometric'" readonly="True"/> 
+                <field name="port" 
+                    invisible="type !='biometric'" readonly="True"/>
+                <field name="password" 
+                    invisible="type !='biometric'" readonly="True"/>
+                <field name="protocol" 
+                    invisible="type !='biometric'" readonly="True"/>
+                <!-- <field name="connected" 
+                    invisible="type !='biometric'" readonly="True"/> -->
+            </xpath>
+        </field>
+    </record>
+
+    <record id="iot_device_view_kanban_inherit_biometric" model="ir.ui.view">
+        <field name="name">iot.device.view.kanban.inherit.biometric</field>
+        <field name="model">iot.device</field>
+        <field name="inherit_id" ref="iot.iot_device_view_kanban"/>
+        <field name="arch" type="xml">
+            <!-- تعديل قاموس types داخل aside -->
+            <xpath expr="//t[@t-name='card']/aside/t[@t-set='types']" position="replace">
+                <t t-set="types" t-value="{
+                    'camera': 'camera',
+                    'printer': 'printer',
+                    'device': 'rulers',
+                    'payment': 'payment-terminal',
+                    'scale': 'scales',
+                    'keyboard': 'keyboard',
+                    'scanner': 'barcode-scanner',
+                    'display': 'desktop',
+                    'fiscal_data_module': 'fdm',
+                    'biometric': 'scales'
+                }"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!--    Inherited hr employee for adding new field-->
+    <record id="view_partner_fingerprint_form_inherit" model="ir.ui.view">
+        <field name="name">hr.partner.view.form.inherit.hr.fingerprint</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!-- ابحث عن حقل vat وأضف حقل fingerprint_user_number بعده -->
+            <xpath expr="//field[@name='vat']" position="after">
+                <field name="fingerprint_user_number"/>
+            </xpath>
+        </field>
+</record>
+</odoo>

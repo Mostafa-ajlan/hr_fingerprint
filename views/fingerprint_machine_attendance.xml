@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree View for Biometric Devices -->
+    <record id="view_fingerprint_machine_attendance_tree" model="ir.ui.view">
+        <field name="name">fingerprint.attendance.tree</field>
+        <field name="model">fingerprint.attendance</field>
+        <field name="arch" type="xml">
+            <list create="false" >
+                <field name="user_id"/>
+                <field name="device_id"/>
+                <field name="attendance_type"/>
+                <field name="punching_time"/>
+                <field name="punch_type"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action and Menu Configuration -->
+    <record id="action_fingerprint_machine_attendance" model="ir.actions.act_window">
+        <field name="name">fingerprint.attendance.action</field>
+        <field name="res_model">fingerprint.attendance</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <menuitem id="menu_fingerprint_machine_attendance_main" 
+              name="Attendance" 
+              parent="menu_fingerprint_root"/>
+              
+    <menuitem id="menu_fingerprint_machine_attendance" 
+              name="Attendance Data" 
+              parent="menu_fingerprint_machine_attendance_main"
+              action="action_fingerprint_machine_attendance"/>
+
+</odoo>

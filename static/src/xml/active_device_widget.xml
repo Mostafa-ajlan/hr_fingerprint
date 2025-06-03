@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template xml:space="preserve">
+    <t t-name="hr_fingerprints.ActiveDeviceWidget" owl="1">
+        <div>
+            <span t-att-style="'background-color: ' + (props.record.data[props.name] == true ? 'green':'red')" t-on-click="this.ActiveDeviceWidgetClick">active</span>
+
+        </div>
+    
+    </t>
+    
+</template>

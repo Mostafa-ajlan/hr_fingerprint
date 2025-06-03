@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_fingerprints.FetchHrAttDeviceInfo">
+        <button type="button" class="btn btn-primary" data-tooltip="Device Information" aria-label="Device Information" t-on-click.stop="fetchDeviceInfo" data-bounce-button="">
+            Device Information
+        </button>
+    </t>
+
+</templates>
