@@ -20,167 +20,134 @@ function uuid() {
     return [...array].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/**
- * Get the devices from the ids stored in the localStorage
- * @param orm The ORM service
- * @param stored_content The list of devices in localStorage
- */
-// async function getDevicesFromIds(orm, stored_content) {
-//     return await orm.call("ir.actions.report", "get_devices_from_ids", [
-//         0,
-//         stored_content,
-//     ]);
-// }
+export function buildParams(device, args, extraData) {
+    const { action } = args;
 
-/**
- * Send the report to the IoT device using longpolling
- * @param env The environment
- * @param orm The ORM service
- * @param args The arguments to send to the server to render the report
- * @param stored_device_ids The list of devices in localStorage to send the report to
- */
-async function longpolling(env, orm, args) {
-    const device = await orm.call("iot.device", "get_iot_box_data", [args[0], args[2]]).catch((error) => {
-        throw error;
-    });
-    if (!device) {
-        throw new Error("Failed to get iot info from iot devices");
-    }
+    const actionBuilders = {
+        // حفظ معلومات جهاز البصمة
+        save_fingerprint_device_info: () => ({
+            iot_ip: device.iot_ip,
+            identifier: device.identifier,
+            // display_name: args.name,
+            ...extraData,
+        }),
+        // الإجراء الافتراضي
+        default: () => ({
+            iot_ip: device.iot_ip,
+            identifier: device.identifier,
+            ...extraData,
+        }),
+    };
 
-    if ('connected' in device && !device.connected) {
-        if (args[1] == 'save_fingerprint_device_info') {
-
-            if ('create' in device && !device.create) {
-                env.services.notification.add(
-                    _t("The device was not saved because it already existed.",
-                        device.name), { type: "danger" });
-            }
-            else {
-                env.services.notification.add(
-                    _t("The device has been saved, but there is a problem connecting to the IoT device to retrieve all device data.",
-                        device.iot_name), { type: "danger" });
-            }
-            await env.services.action.doAction({
-                type: 'ir.actions.act_window_close'
-            });
-        } else {
-            env.services.notification.add(
-                _t("Device not connected. Check is connected correctly with IoT device .",
-                    device.iot_name), { type: "danger" }
-            );
-        }
-        return
-    }
-
-    const identifier = device.identifier;
-
-    const longpollingHasFallback = true; // Prevent `IoTConnectionErrorDialog`
-    await env.services.notification.add(_t("Sending to biometric %s...", device.name), { type: "info" });
-    const iotDevice = new DeviceController(env.services.iot_longpolling, { iot_ip: device.iot_ip, identifier });
-    const params = {
-        'iot_ip': device.iot_ip,
-        'identifier': identifier,
-        'name': device.name,
-        'ip_address': device.ip_address,
-        'port': device.port,
-        'password': device.password,
-        'protocol': device.protocol,
-        'display_name': args[2], // Add the device display name to the iot object
-    }
-    const response = await iotDevice.action({ 'action': args[1], 'params': params }, longpollingHasFallback);
-    console.log("response", response);
-    await env.services.action.doAction({
-        type: 'ir.actions.act_window_close'
-    });
+    // استخدام الإجراء المحدد أو الافتراضي إذا لم يكن موجوداً
+    const builder = actionBuilders[action] || actionBuilders.default;
+    return builder();
 }
 
-// async function showNotificationAndClose(env, message, type = "danger") {
-//     await env.services.notification.add(_t(message), { type });
-//     await env.services.action.doAction({ type: 'ir.actions.act_window_close' });
-// }
-
-// async function longpolling(env, orm, args) {
-//     try {
-//         const device = await orm.call("iot.device", "get_iot_box_data", [args[0], args[2]]);
-//         if (!device) {
-//             throw new Error("Failed to get IoT info from IoT devices");
+// async function handleDeviceNotConnected(env, device, action, name) {
+//     if (action === 'save_fingerprint_device_info') {
+//         if ('create' in device && !device.create) {
+//             env.services.notification.add(
+//                 _t("The device was not saved because it already existed.", name), { type: "danger" });
+//         } else {
+//             env.services.notification.add(
+//                 _t("The device has been saved, but there is a problem connecting to the IoT device to retrieve all device data.", device.iot_name), { type: "danger" });
 //         }
-
-//         const {
-//             iot_ip,
-//             iot_name,
-//             name,
-//             identifier,
-//             ip_address,
-//             port,
-//             password,
-//             protocol,
-//             connected,
-//             create
-//         } = device;
-
-//         if (!connected) {
-//             const message = create
-//                 ? _t("The device has been saved, but there is a problem connecting to the IoT device to retrieve all device data.", iot_name)
-//                 : _t("The device was not saved because it already existed.", name);
-
-//             await showNotificationAndClose(env, message);
-//             return;
-//         }
-
-//         const params = [
-//             iot_ip,
-//             identifier,
-//             name,
-//             ip_address,
-//             port,
-//             password,
-//             protocol,
-//             args[2] // Add the device display name
-//         ];
-
-//         await env.services.notification.add(_t("Sending to biometric %s...", name), { type: "info" });
-
-//         const iotDevice = new DeviceController(env.services.iot_longpolling, { iot_ip, identifier });
-//         const response = await iotDevice.action(
-//             { action: args[1], params },
-//             true // longpollingHasFallback
-//         );
-
-//         console.debug("IoT Device Response:", response);
 //         await env.services.action.doAction({ type: 'ir.actions.act_window_close' });
-
-//     } catch (error) {
-//         await showNotificationAndClose(env, `An error occurred: ${error.message}`);
+//     } else {
+//         env.services.notification.add(
+//             _t("Device not connected. Check is connected correctly with IoT device.", device.iot_name), { type: "danger" }
+//         );
 //     }
 // }
-
 /**
- * Try to send the report to the IoT device using longpolling, then fallback to the websocket
- * @param env The environment
- * @param orm The ORM service
- * @param args The arguments to send to the server to render the report
- * @param stored_device_ids The list of devices to send the report to
+ * General function to send action to IoT device and handle notifications.
  */
+async function sendIoTAction(env, device, action, params) {
+    const identifier = device.identifier;
+
+    const iotDevice = new DeviceController(env.services.iot_longpolling, { iot_ip: device.iot_ip, identifier });
+    await env.services.notification.add(_t("Sending to %s biometric Device...", device.name), { type: "info" });
+    try {
+        const response = await iotDevice.action({ action, params }, true);
+        await env.services.action.doAction({ type: 'ir.actions.act_window_close' });
+    } catch (error) {
+        env.services.notification.add(_t("IoT action failed: %s", error.message), { type: "danger" });
+        throw error;
+    }
+}
+
+// async function saveFingerprintDeviceInfo(env, orm, args) {
+//     // const iotIsConnect = await env.services.iot_longpolling.checkConnection(device.iot_ip);
+
+//     const { iot_device, action, name, extraData } = args;
+//     const device = await orm.call("iot.device", "get_iot_box_data", [iot_device, name]);
+//     if (!device) throw new Error("Failed to get iot info from iot devices");
+//     if ('connected' in device && !device.connected) {
+//         await handleDeviceNotConnected(env, device, action, name);
+//         return;
+//     }
+//     const params = buildParams(device, args, extraData);
+//     await sendIoTAction(env, device, action, params);
+
+// }
+
+async function longpolling(env, orm, args) {
+
+    try {
+        const res = await orm.searchRead("iot.device", [['id', '=', args.iot_device[0]]], ['iot_ip', 'identifier', 'name', 'connected'], { limit: 1 });
+        const device = res && res[0];
+
+        if (!device) throw new Error("Failed to get iot info from iot devices");
+        const isConnected = await env.services.iot_longpolling.checkConnection(device.iot_ip, device.identifier);
+        if (!isConnected.result) {
+            env.services.notification.add(
+                _t("Please make sure that the %s device is connected to the iot device.", device.name),
+                { type: "danger" }
+            );
+            throw new Error("Device is not connected");
+            // return;
+        }
+
+        const params = buildParams(device, args, args.extraData);
+        await sendIoTAction(env, device, args.action, params);
+
+    } catch (error) {
+        env.services.notification.add(_t("Check Connecting IoT Device : %s", error.message), { type: "danger" });
+        throw error;
+    }
+
+}
+
 export async function handleBiometricIoTConnectionFallbacks(env, orm, args) {
-    args.push(uuid()); // Add a unique identifier to the args
-    // Define the connection types in the order of executions to try
+    args.extraData = args.extraData || {};
+    args.extraData.uuid = uuid(); // Add a unique identifier to the params
     const connectionTypes = [
         () => longpolling(env, orm, args),
-        // () => env.services.fingerprint_iot_websocket.addBiomtrecJob(args, false),
     ];
     for (const connectionType of connectionTypes) {
         try {
             await connectionType();
             return;
         } catch {
+            console.log("iiiiiiiiiiiiiiiiiiiiiiii")
             console.debug("Send action request failed, attempting another protocol.")
         }
     }
 
-    // // Fail notification if all connections failed
-    // env.services.notification.add(_t("Failed to send to printer."), { type: "danger" });
 }
+export async function handleBiometricIoTConnectionFallbacks2(env, orm, args) {
+    args.extraData = args.extraData || {};
+    args.extraData.uuid = uuid(); // Add a unique identifier to the params
+    try {
+        await longpolling(env, orm, args);
+    } catch (error) {
+        console.log("iiiiiiiiiiiiiiiiiiiiiii")
+        // إذا فشل الاتصال، نرمي الاستثناء مباشرة ليتم منعه في الواجهة الأمامية
+        throw error;
+    }
+}
+
 
 
 

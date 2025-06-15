@@ -42,11 +42,28 @@ export class FingerprintButtonAction extends Component {
     }
 
     async handleIoTMode() {
-        const args = [
-            this.props.record.data.iot_device_id,
-            this.props.action,
-            this.props.record.data.name
-        ];
+        const args = {
+            iot_device: this.props.record.data.iot_device_id,
+            action: this.props.action,
+            extraData: {}
+        };
+        if (this.props.action === 'save_fingerprint_device_info') {
+            args.name = this.props.record.data.name;
+            args.extraData.display_name = this.props.record.data.name
+            args.extraData.server_date = await this.orm.call(
+                'hr.fingerprint.device',
+                'get_server_datetime',
+                []
+            );
+            console.log(args.extraData.server_date, "args.extraData.server_date")
+        }
+        if (this.props.action === 'sync_time') {
+            args.extraData.server_date = await this.orm.call(
+                'hr.fingerprint.device',
+                'get_server_datetime',
+                []
+            );
+        }
         await handleBiometricIoTConnectionFallbacks(this.env, this.orm, args);
     }
 

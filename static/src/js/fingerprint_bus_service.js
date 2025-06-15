@@ -16,8 +16,16 @@ export const fingerprintIoTNotificationService = {
                 notification.add(_t(content, message.device_identifier, message.operation || ''), {
                     type: 'success',
                 });
-                await action.doAction({ type: 'ir.actions.act_window_close' });
-                await action.doAction({ type: 'ir.actions.client', tag: 'reload' })
+                // await action.doAction({ type: 'ir.actions.act_window_close' });
+                await action.doAction({
+                    type: 'ir.actions.client',
+                    tag: 'reload',
+                    params: {
+                        model: 'hr.fingerprint.device',
+                        view_type: 'list',
+                    },
+                });
+
             }
             else if (message.action_type === 'live_capture') {
                 notification.add(_t(content, message.device_identifier, message.fingerprint_type, message.punch_type), {
@@ -42,6 +50,8 @@ export const fingerprintIoTNotificationService = {
                 // clear_data: 'Cleared all data successfully from %s device.',
                 shutdown_device: 'The device %s has been successfully turned off.',
                 reboot_device: 'The device %s has been successfully reboot.',
+                sync_time: 'The device %s has been successfully sync time.',
+                create_or_update_user: 'User created or updated successfully from %s device.',
                 live_capture: 'Fingerprint registered from %s device. [Type: %s, Punch: %s]',
             };
 

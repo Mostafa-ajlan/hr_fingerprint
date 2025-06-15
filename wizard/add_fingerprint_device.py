@@ -45,14 +45,8 @@ class AddFingerprintDevice(models.TransientModel):
         'iot.device', 
         string='IoT Device',
         domain=lambda self: self._get_iot_device_domain(),
-        tracking=True
     )
-    # iot_device_id = fields.Many2one(
-    #     'iot.device', 
-    #     string='IoT Device',
-    #     domain="[('type', '=', 'biometric')]",
-    #     tracking=True
-    # )
+    
     
     iot_status = fields.Selection(
         selection=[
@@ -65,14 +59,22 @@ class AddFingerprintDevice(models.TransientModel):
         default='not_applicable'  # ⚠️ إضافة قيمة افتراضية
     )
 
-    def _get_iot_device_domain(self):
-        used_ids = self.env['hr.fingerprint.device'].search([]).mapped('iot_device_id.id')
-        return [('type', '=', 'biometric'), ('id', 'not in', used_ids)]
-    
     # def _get_iot_device_domain(self):
     #     used_ids = self.env['hr.fingerprint.device'].search([]).mapped('iot_device_id.id')
-    #     print(used_ids, "used_ids")
-    #     return f"[('type', '=', 'biometric'),('id', 'not in',{used_ids})]"
+    #     return [('type', '=', 'biometric'), ('id', 'not in', used_ids)]
+
+    def _get_iot_device_domain(self):
+        
+        used_device_ids = self.env['hr.fingerprint.device'].search([
+            ('iot_device_id', '!=', False)
+        ]).mapped('iot_device_id.id')
+        domain = [
+            ('type', '=', 'biometric'),  # فقط أجهزة البصمة
+            # '|',
+            # ('id', 'not in', used_device_ids),  # لم يتم ربطها مسبقاً
+            # ('id', '=', False)  # للتأكد من عدم وجود أخطاء في حالة عدم وجود أجهزة مستخدمة
+        ]
+        return domain
     
     @api.depends('connection_mode', 'iot_device_id.connected')
     def _compute_iot_status(self):
@@ -82,18 +84,5 @@ class AddFingerprintDevice(models.TransientModel):
             else:
                 device.iot_status = 'not_applicable'
 
-    def save_device(self):
-        print("save_device")
-        return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'type': 'info',
-                    'message': _("Using Pairing Code to connect..."),
-                    'sticky': False,
-                    'params': {
-                        'next': {'type': 'ir.actions.act_window_close'},
-                    }
-                },
-            }            
+               
 

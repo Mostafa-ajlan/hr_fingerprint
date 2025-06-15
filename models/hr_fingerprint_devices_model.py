@@ -4,12 +4,12 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools.translate import _
 
 from odoo import models, fields, api, _
+from odoo.modules.registry import Registry
 from datetime import datetime
 import logging
-import socket
 import json
-import time
 import threading
+import base64
 
 _logger = logging.getLogger(__name__)
 try:
@@ -33,6 +33,8 @@ class HrFingerprintDevice(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     BATCH_SIZE = 1000
+    device_threads = {}
+    stop_events = {}  # قاموس لتخزين كائنات Event للتحكم في إيقاف الـ threads
     
     # Fields for device information
     name = fields.Char(string='Device Display Name', readonly=True, )
@@ -65,7 +67,6 @@ class HrFingerprintDevice(models.Model):
         string='IoT Device',
         domain="[('type', '=', 'biometric')]",
         readonly=True,
-        
     )
 
     # For Network connection
@@ -213,12 +214,8 @@ class HrFingerprintDevice(models.Model):
     # Constraints 
     _sql_constraints = [
         ('serial_number_unique', 'UNIQUE(serial_number)', 'Serial number must be unique!'),
-        # ('ip_port_unique', 'UNIQUE(ip_address, port)', 'IP and Port combination must be unique!'),
+        ('mac_address_unique', 'UNIQUE(mac_address)', 'Mac address must be unique!'),
     ]
-
-    # def __init__(self, name, bases, attrs):
-    #     super(HrFingerprintDevice, self).__init__(name, bases, attrs)
-    #     print("EEEEERRRRRRRTTTTTTTEEEEEEEEEEE")
 
     @api.depends('user_count', 'max_user_count')
     def _compute_user_usage(self):
@@ -265,15 +262,6 @@ class HrFingerprintDevice(models.Model):
         for rec in self:
             rec.att_log_count = len(rec.attendance_ids)
 
-    # @api.onchange('connection_mode')
-    # def _onchange_connection_mode(self):
-    #     if self.connection_mode == 'iot':
-    #         self.connection_type = False
-    #     elif self.connection_mode == 'direct':
-    #         pass  # يجب على المستخدم اختيار نوع الاتصال
-    #     elif self.connection_mode == 'push':
-    #         self.connection_type = False
-
     @api.depends('connection_mode', 'iot_device_id.connected', 'ip_address', 'port')
     def _compute_connection_status(self):
         for device in self:
@@ -294,53 +282,17 @@ class HrFingerprintDevice(models.Model):
         except Exception:
             return 'disconnected'
     
-    def send_to_iot_box(self, device, websocket=True):
-        """
-            Send the dictionary in message to the iot_box via websocket, or return the data to be sent by longpolling.
-        """
-        iot_identifiers = device['iot_id']
-        print(iot_identifiers,"iot_identifiersiot_identifiersiot_identifiers")
-        self._send_websocket({
-            "iotDevice":{
-                "iotIdentifiers": device['iot_id'].identifier,
-                "identifier": device['identifier'],
-                "id": device['id']
-            }
-        })
-        pass
-        # if not websocket:
-        #     return [
-        #         [
-        #             self.env["iot.box"].search([("identifier", "=", device["iotIdentifier"])]).ip,
-        #             device["identifier"],
-        #             device['name'],
-        #             data_base64,
-        #         ]
-        #         for device in devices
-        #     ]
-
-        # self._send_websocket({
-        #     "iotDevice": {
-        #         "iotIdentifiers": list(iot_identifiers),
-        #         "identifiers": [{
-        #             "identifier": device["identifier"],
-        #             "id": device["id"]
-        #         } for device in devices],
-        #     },
-        #     "print_id": print_id,
-        #     "document": data_base64
-        # })
-        # return print_id
     
-    def _send_websocket(self, message):
-        """
-            Send the dictionnary in message to the iot_box via websocket and return True.
-        """
-        print(message,"messagemessagemessagemessage",self.env['iot.channel'].get_iot_channel())
-        self.env['bus.bus']._sendone(self.env['iot.channel'].get_iot_channel(), 'iot_action', message)
-        return True
    
-    def _connect_to_zk_device(self):
+    @api.model
+    def get_server_datetime(self):
+        """
+        Return the current server datetime as a string.
+        """
+        now = fields.Datetime.now()
+        return fields.Datetime.to_string(now)
+    
+    def connect_to_zk_device(self):
         """إنشاء اتصال مع جهاز ZK وإرجاع كائن الاتصال"""
         try:
             zk_device = ZK(
@@ -359,6 +311,15 @@ class HrFingerprintDevice(models.Model):
             )
             return False, False
 
+    def _set_device_time(self, zk_device):
+        """ضبط وقت الجهاز ليكون متزامنًا مع وقت السيرفر"""
+        try:
+            # افترض أن zk_device لديه دالة لضبط الوقت
+            zk_device.set_time(datetime.now())
+            _logger.info("Device time set successfully.")
+        except Exception as e:
+            _logger.error("Failed to set device time: %s", e)
+    
     def _fetch_device_statistics(self, zk_device):
         """جلب إحصائيات الجهاز"""
         try:
@@ -441,6 +402,7 @@ class HrFingerprintDevice(models.Model):
         except Exception as e:
             _logger.error("Error fetching users from device: %s", str(e))
             return []
+    
     def _fetch_and_create_users(self, zk_device):
         """جلب وإنشاء المستخدمين"""
         try:
@@ -462,20 +424,19 @@ class HrFingerprintDevice(models.Model):
             templates = zk_device.get_templates()
             template_vals_list = []
             for template in templates:
-                print("QQQQQQQQQQQQQQQQQQQQQQQ")
                 user = self.env['hr.fingerprint.user'].search([
                     ('device_id', '=', self.id),
-                    ('uid', '=', template.uid)
+                    ('uid', '=', str(template.uid))
                 ], limit=1)
                 if user:
                     template_vals_list.append({
                         'device_id': self.id,
                         'user_id': user.id,
-                        'fingerprint_id': template.fid,
+                        'fingerprint_id': int(template.fid),
                         'size': int(template.size),
-                        'template': template.template,
                         'valid': int(template.valid),
-                        'mark': template.mark,
+                        'template': base64.b64encode(json.dumps(template.json_pack()).encode('utf-8')).decode('utf-8'),
+                        'mark': base64.b64encode(template.mark).decode('utf-8')
                     })
             return template_vals_list
         except Exception as e:
@@ -537,11 +498,14 @@ class HrFingerprintDevice(models.Model):
             if record.connection_mode == 'direct' :
                 if record.connection_type == 'network' and record.ip_address and record.port:
                     # إنشاء الاتصال
-                    zk_device, conn = record._connect_to_zk_device()
+                    zk_device, conn = record.connect_to_zk_device()
                     if not zk_device or not conn:
                         continue
 
                     try:
+                        # ضبط وقت الجهاز
+                        record._set_device_time(zk_device)
+
                         # جلب وحفظ معلومات الجهاز
                         device_info = record._fetch_device_info(zk_device)
                         if device_info:
@@ -568,8 +532,6 @@ class HrFingerprintDevice(models.Model):
                         if conn:
                             conn.disconnect()
         return records    
-    
-    
     
     def unlink(self):
         """
@@ -636,7 +598,7 @@ class HrFingerprintDevice(models.Model):
         :return: قاموس النتيجة المحدث
         """
         # الاتصال بالجهاز
-        zk_device, conn = device._connect_to_zk_device()
+        zk_device, conn = device.connect_to_zk_device()
         if not zk_device or not conn:
             result['message'] = _("Could not connect to the device.")
             return result
@@ -650,7 +612,7 @@ class HrFingerprintDevice(models.Model):
                 'reboot_device': self._handle_reboot_device,
                 'shutdown_device': self._handle_shutdown_device,
                 'clear_attendance': self._handle_clear_attendance,
-                'set_time': self._handle_set_time,
+                'sync_time': self._handle_set_time,
                 'get_device_info': self._handle_get_device_info,
             }
             
@@ -711,48 +673,6 @@ class HrFingerprintDevice(models.Model):
         
         return result
 
-    # def _process_iot_action(self, device, action_type, result):
-    #     """
-    #     معالجة الإجراءات للأجهزة المتصلة عبر IoT Box
-        
-    #     :param device: سجل الجهاز
-    #     :param action_type: نوع الإجراء
-    #     :param result: قاموس النتيجة الأولي
-    #     :return: قاموس النتيجة المحدث
-    #     """
-    #     try:
-    #         if not device.iot_device_id:
-    #             result['message'] = _("No IoT device configured.")
-    #             return result
-            
-    #         # إعداد رسالة للإرسال إلى IoT Box
-    #         message = {
-    #             "iotDevice": {
-    #                 "iotIdentifiers": device.iot_device_id.identifier,
-    #                 "identifier": device.serial_number or str(device.id),
-    #                 "id": device.id
-    #             },
-    #             "action": action_type,
-    #             "params": {}
-    #         }
-            
-    #         # إضافة معلمات إضافية حسب نوع الإجراء
-    #         if action_type in ['fetch_user', 'download_template', 'download_attendance']:
-    #             message["params"]["since_last_sync"] = True
-            
-    #         # إرسال الرسالة عبر WebSocket
-    #         self._send_websocket(message)
-            
-    #         result.update({
-    #             'status': 'pending',
-    #             'message': _("Command sent to IoT Box.")
-    #         })
-        
-    #     except Exception as e:
-    #         result['message'] = _("Error sending command to IoT Box: %s") % str(e)
-    #         _logger.exception("Error in _process_iot_action for device %s: %s", device.name, e)
-        
-    #     return result
 
     def _handle_fetch_user(self, device, zk_device, conn, result):
         """معالج جلب المستخدمين"""
@@ -855,98 +775,184 @@ class HrFingerprintDevice(models.Model):
             result['message'] = _("Failed to get device info: %s") % str(e)
         return result
         
-    def _live_capture_worker(self):
-        zk, conn = self._connect_to_zk_device()
-        print(zk,conn,"zkconnzkconnzkconnzkconn",conn)
-        if not zk or not conn:
-            _logger.warning("Failed to connect to device: %s", self.name)
+
+    def write(self, vals):
+        result = super(HrFingerprintDevice, self).write(vals)
+        if 'auto_sync_time' in vals and self.connection_mode == 'direct':
+            if vals['auto_sync_time']:
+                self.start_live_caputre()
+            else:
+                self.end_live_caputre()   
+        return result
+    
+    def start_live_caputre(self):
+        """
+        بدء عملية الاستماع المباشر لأحداث الجهاز
+        """
+        self.ensure_one()
+        device_identifier = f"{self.env.cr.dbname}_{self.id}"
+        
+        # التحقق من عدم وجود thread نشط بالفعل لهذا الجهاز
+        if device_identifier in self.device_threads:
+            _logger.info("Live capture already running for device: %s", self.name)
             return
+        
+        # إنشاء كائن Event جديد وإعادة تعيينه (clear)
+        stop_event = threading.Event()
+        
+        # إعداد بيانات الجهاز
+        device_data = {
+            'id': self.id,
+            'ip_address': self.ip_address,
+            'port': self.port,
+            'connection_timeout': self.connection_timeout,
+            'password': self.password,
+            'protocol': self.protocol,
+            'dbname': self.env.cr.dbname,
+            'uid': self.env.uid,
+            'context': self.env.context,
+            'stop_event': stop_event,
+        }
+
+        t = threading.Thread(target=self._live_capture_worker_static, args=(device_data,), daemon=True)
+        t.start()
+        
+        self.device_threads[device_identifier] = t
+        self.stop_events[device_identifier] = stop_event
+        
+        _logger.info("Started live capture for device: %s (ID: %s)", self.name, self.id)
+        
+        return True
+
+    def end_live_caputre(self):
+        """
+        إيقاف عملية الاستماع المباشر لأحداث الجهاز
+        """
+        self.ensure_one()
+        device_identifier = f"{self.env.cr.dbname}_{self.id}"
+        
+        # التحقق من وجود thread نشط لهذا الجهاز
+        if device_identifier not in self.device_threads:
+            _logger.info("No active live capture for device: %s", self.name)
+            return
+        
+        print(self.stop_events," preprepreeeeee")
+        # إرسال إشارة لإيقاف الـ thread باستخدام Event
+        if device_identifier in self.stop_events:
+            self.stop_events[device_identifier].set()
+            self.stop_events.pop(device_identifier) 
+            _logger.info("Signaled to stop live capture for device: %s (ID: %s)", self.name, self.id)
+        
+        print(self.stop_events," afterrrrrrrrrrrr")
+        if device_identifier in self.device_threads:
+            self.device_threads.pop(device_identifier)
+
+        _logger.info("Stopped live capture for device: %s (ID: %s)", self.name, self.id)
+        
+        return True
+
+    def _register_hook(self):
+        super()._register_hook()
+        devices = self.env['hr.fingerprint.device'].sudo().search([
+            ('connection_mode', '=', 'direct'), 
+            ('auto_sync_time', '=', True)], 
+        )
+
+        for device in devices:
+            stop_event = threading.Event()
+            print(stop_event,"gfgfgfgfg")
+            device_data = {
+                'id': device.id,
+                'ip_address': device.ip_address,
+                'port': device.port,
+                'connection_timeout': device.connection_timeout,
+                'password': device.password,
+                'protocol': device.protocol,
+                'dbname': self.env.cr.dbname,
+                'uid': self.env.uid,
+                'context': self.env.context,
+                'stop_event': stop_event,
+            }
+            t = threading.Thread(target=self._live_capture_worker_static, args=(device_data,), daemon=True)
+            t.start()
+            self.device_threads[f"{self.env.cr.dbname}_{device.id}"] = t
+            self.stop_events[f"{self.env.cr.dbname}_{device.id}"] = stop_event
+
+    @staticmethod
+    def _live_capture_worker_static(device_data):
+        """
+        دالة ثابتة تعمل في thread منفصل للاستماع إلى أحداث الجهاز
+        تستخدم device_data بدلاً من الوصول المباشر إلى self
+        """
+        # استخراج البيانات من المعلومات المخزنة
+        device_id = device_data['id']
+        ip_address = device_data['ip_address']
+        port = int(device_data['port'])
+        connection_timeout = device_data['connection_timeout']
+        password = int(device_data['password'])
+        protocol = device_data['protocol']
+        dbname = device_data['dbname']
+        uid = device_data['uid']
+        context = device_data['context']
+        stop_event = device_data['stop_event']  # كائن Event للتحكم في إيقاف الـ thread
         try:
+            # إنشاء اتصال مع جهاز ZK
+            zk_device = ZK(
+                ip_address,
+                port=port,
+                timeout=connection_timeout,
+                password=password if password else 0,
+                force_udp=(protocol == 'udp'),
+            )
+            conn = zk_device.connect()
+            
+            if not conn:
+                _logger.warning("Failed to connect to device ID: %s", device_id)
+                return
+                
+            # بدء الاستماع للأحداث
             for attendance in conn.live_capture(new_timeout=10):
-                print("Live capture attendance1111:", attendance)
-                # if not self.auto_sync_time:
-                #     print("Live capture attendance2222:", attendance)
-                #     break  # توقف إذا تم إلغاء التفعيل
+                print("received for device: ", attendance)
+                # التحقق من إشارة التوقف باستخدام Event
+                if stop_event.is_set():
+                    print("Stop event received for device:",device_id)
+                    _logger.info("Stop event received for device %s, stopping live capture", device_id)
+                    break
                 if attendance is None:
                     continue
-                print("Live capture attendance33333:", attendance)
-                user = self.env['hr.fingerprint.user'].search([
-                    ('uid', '=', str(attendance.user_id)),
-                    ('device_id', '=', self.id)
-                ], limit=1)
-                self.env['fingerprint.attendance'].create({
-                    'device_id': self.id,
-                    'user_id': user.id if user else False,
-                    'punch_type': str(attendance.punch),
-                    'attendance_type': str(attendance.status),
-                    'punching_time': attendance.timestamp,
-                    'is_used': False,
-                })
+
+                # إنشاء بيئة جديدة للتعامل مع قاعدة البيانات
+                registry_obj = Registry(dbname)
+                with registry_obj.cursor() as new_cr:
+                    env = api.Environment(new_cr, uid, context)
+                    
+                    # البحث عن المستخدم
+                    user = env['hr.fingerprint.user'].search([
+                        ('uid', '=', str(attendance.user_id)),
+                        ('device_id', '=', device_id)
+                    ], limit=1)
+                    
+                    # إنشاء سجل حضور جديد
+                    env['fingerprint.attendance'].create({
+                        'device_id': device_id,
+                        'user_id': user.id if user else False,
+                        'punch_type': str(attendance.punch),
+                        'attendance_type': str(attendance.status),
+                        'punching_time': attendance.timestamp,
+                        'is_used': False,
+                    })
+                    new_cr.commit()
+                        
         except Exception as e:
-            _logger.error("Live capture error: %s", e)
+            _logger.error("Live capture error for device %s: %s", device_id, str(e))
         finally:
-            if conn:
-                try:
-                    conn.disconnect()
-                except Exception:
-                    pass
+            try:
+                conn.disconnect()
+            except Exception:
+                pass
 
-    # def toggle_auto_sync_time(self):
-    #     print(self.id,"self.id")
-    #     print(self.env.cr.dbname,"device.env.cr.dbname")
-    #     for device in self:
-    #         identifier = f"{self.env.cr.dbname}_{device.id}"
-    #         if device.auto_sync_time and identifier not in self._live_threads:
-    #             # بدء live_capture في Thread جديد
-    #             t = threading.Thread(target=device._live_capture_worker, daemon=True)
-    #             t.start()
-
-    #             self._live_threads[identifier] = t
-    #         elif not device.auto_sync_time and identifier in self._live_threads:
-    #             print("Stopping live capture for device:", device.name)
-    #             # سيتم إيقاف الـ live_capture تلقائياً في الحلقة عند فحص auto_sync_time
-    #             self._live_threads.pop(identifier, None) 
-
-    
-    def toggle_auto_sync_time(self):
-        """تفعيل أو إلغاء تفعيل المزامنة التلقائية"""
-        for device in self:
-            device.write({'auto_sync_time': device.auto_sync_time})
-            # لا نحتاج لأي إجراء إضافي هنا، سيتم التعامل مع المزامنة من خلال Cron Job
-
-    
-    # @api.model
-    # def _cron_live_capture_devices(self):
-    #     """
-    #     وظيفة Cron لجلب سجلات الحضور من الأجهزة المفعلة
-    #     يتم تشغيلها بشكل دوري من خلال Scheduled Action
-    #     """
-    #     print("Starting scheduled fetch attendance from devices")
-    #     _logger.info("Starting scheduled fetch attendance from devices")
-        
-    #     devices = self.search([
-    #         ('auto_sync_time', '=', True),
-    #         ('connection_mode', '=', 'direct'),
-    #         ('connection_type', '=', 'network')
-    #     ])
-
-    #     for device in devices:
-    #         print(device.id,"device.id")
-    #         identifier = f"{self.env.cr.dbname}_{device.id}"
-    #         print(identifier,"identifier")
-    #         if device.auto_sync_time and identifier not in self._live_threads:
-    #             # بدء live_capture في Thread جديد
-    #             t = threading.Thread(target=device._live_capture_worker, daemon=True)
-    #             t.start()
-
-    #             self._live_threads[identifier] = t
-    #         elif not device.auto_sync_time and identifier in self._live_threads:
-    #             print("Stopping live capture for device:", device.name)
-    #             # سيتم إيقاف الـ live_capture تلقائياً في الحلقة عند فحص auto_sync_time
-    #             self._live_threads.pop(identifier, None)        
-
-
-    # push protocol functions
+   
+   # push protocol functions
     def process_attendance_data(self, data, stamp):
         """
         processing attendance data from the device
@@ -1016,6 +1022,7 @@ class HrFingerprintDevice(models.Model):
         """
         # Process each line of the operation log
         for line in data.split('\n'):
+            _logger.info(f"RRRRRRRRRRRRRRRRRRRRR: {line}")
             if line.startswith('USERPIC'):
                 # user picture data processing
                 self.user_pic_data(line)
@@ -1055,7 +1062,6 @@ class HrFingerprintDevice(models.Model):
                 _logger.error({'line': line, 'status': 'error', 'error': str(e)})
                 continue
             
-    
     def user_biometric_data(self, data_line):
         """
         extract data from a BIODATA line:
