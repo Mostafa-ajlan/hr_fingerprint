@@ -143,12 +143,21 @@
                         <page name="device_commands" string="Device Commands" invisible="connection_mode != 'push'">
                             <field name="command_ids" widget="one2many" readonly="1"  >
                                 <list limit="10">
-                                    <field name="name"/>
-                <field name="cmd_id"/>
-                <field name="command_type"/>
-                <field name="user_id"/>
-                <field name="shell_cmd"/>
-                <field name="generated_command"/>
+                                    <field name="command_type"/>
+                                    <!-- <field name="command_data"/> -->
+                                    <!-- <field name="return_code"/> -->
+                                    <!-- <field name="create_date"/>
+                                    <field name="send_date"/>
+                                    <field name="execution_date"/>
+                                    <field name="response_data"/>
+                                    <field name="state" 
+                                        widget="badge" 
+                                        decoration-success="state == 'done'"
+                                        decoration-primary="state == 'sent'"
+                                        decoration-info="state == 'draft'" 
+                                        decoration-warning="state == 'pending'"
+                                        decoration-danger="state == 'failed'"
+                                    /> -->
                                 </list>
                             </field>
                         </page>
@@ -180,7 +189,7 @@
 
     <!-- Action and Menu Configuration -->
     <record id="action_hr_fingerprint_device" model="ir.actions.act_window">
-        <field name="name">Hr fingerprint Device</field>
+        <field name="name">Hr Fingerprint Device</field>
         <field name="res_model">hr.fingerprint.device</field>
         <field name="view_mode">list,form</field>
         <field name="help" type="html">
@@ -193,16 +202,9 @@
             </p>
         </field>
     </record>
-
-    <menuitem id="menu_fingerprint_root" name="Fingerprint" web_icon="hr_fingerprints,static/description/02.png"/>
-
-    <menuitem id="menu_hr_fingerprint_main" 
-              name="Device" 
-              sequence="10"
-              parent="menu_fingerprint_root"/>
-              
+             
     <menuitem id="menu_biometric_devices" 
-              name="Biometric Devices" 
+              name="Devices Fingerprint" 
               parent="menu_hr_fingerprint_main"
               action="action_hr_fingerprint_device"
               sequence="10"/>
