@@ -7,6 +7,7 @@ from odoo import models, fields, api , http
 _logger = logging.getLogger(__name__)
 
 class ZKPushProtocolController(http.Controller):
+    
 
     def _log_request_data(self, endpoint, kwargs, data=None):
         """تسجيل تفاصيل الطلب الوارد"""
