@@ -11,7 +11,7 @@
                 <field name="partner_id"/>
                 <field name="user_id"/>
                 <field name="privilege"/>
-                <field name="active" widget="boolean_toggle"/>
+                <field name="active_user"/>
                 <field name="image" widget="image" options="{'size': [23, 27]}" class="oe_avatar"/>
             </list>
         </field>
@@ -45,7 +45,7 @@
                         <group>
                             <field name="privilege"/>
                             <field name="end_datetime"/>
-                            <field name="active"/>
+                            <field name="active_user"/>
                         </group>
                     </group>
                     <notebook>
@@ -110,8 +110,8 @@
                 <field name="user_id" string="Device User ID"/>
 
                 <!-- فلترات أساسية -->
-                <filter name="active_users" string="Active Users" domain="[('active', '=', True)]"/>
-                <filter name="inactive_users" string="Inactive Users" domain="[('active', '=', False)]"/>
+                <filter name="active_users" string="Active Users" domain="[('active_user', '=', True)]"/>
+                <filter name="inactive_users" string="Inactive Users" domain="[('active_user', '=', False)]"/>
                 <filter name="admins" string="Admins" domain="[('privilege', 'in', ['6','14'])]"/>
 
                 <!-- تجميعات -->
