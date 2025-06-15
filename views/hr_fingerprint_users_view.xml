@@ -11,8 +11,6 @@
                 <field name="partner_id"/>
                 <field name="user_id"/>
                 <field name="privilege"/>
-
-                
                 <field name="active" widget="boolean_toggle"/>
                 <field name="image" widget="image" options="{'size': [23, 27]}" class="oe_avatar"/>
             </list>
@@ -53,6 +51,24 @@
                     <notebook>
                         <page name="user_attendance" string="Attendance">
                             <field name="attendance_ids" widget="one2many">
+                                <list editable="bottom" limit="10">
+                                    <field name="device_id" />
+                                    <field name="punching_time" />
+                                    <field name="punch_type" />
+                                    <field name="attendance_type" />
+                                </list>
+                            </field>
+                        </page>
+                        <page name="user_template" string="Templates">
+                            <field name="template_ids" widget="one2many">
+                                <list editable="bottom" limit="10">
+                                    <field name="finger_name" />
+                                    <field name="template" />
+                                </list>
+                            </field>
+                        </page>
+                        <page name="user_biometric_data" string="Biometric Data">
+                            <field name="biometric_data_ids" widget="one2many">
                                 <list editable="bottom">
                                     <field name="device_id"/>
                                     <field name="punching_time"/>
