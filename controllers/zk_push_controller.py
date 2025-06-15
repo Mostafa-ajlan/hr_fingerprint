@@ -218,6 +218,7 @@ class ZKPushProtocolController(http.Controller):
             return Response("OK", content_type='text/plain')
         except Exception as e:
             print(f"Error in devicecmd: {str(e)}")
+    
     @http.route('/iclock/edata', type='http', auth='none', methods=['POST'], csrf=False)
     def handle_edata(self, **kwargs):
         """ 

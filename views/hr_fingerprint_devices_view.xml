@@ -174,21 +174,21 @@
                             invisible="connection_mode != 'push'">
                             <field name="command_ids" widget="one2many" readonly="1">
                                 <list limit="10">
-                                    <field name="command_type" />
-                                    <field name="command_data" />
-                                    <field name="return_code" />
-                                    <field name="create_date" />
-                                    <field name="send_date" />
-                                    <field name="execution_date" />
-                                    <field name="response_data" />
-                                    <field name="state"
-                                        widget="badge"
+                                    <field name="command_type"/>
+                                    <!-- <field name="command_data"/> -->
+                                    <!-- <field name="return_code"/> -->
+                                    <!-- <field name="create_date"/>
+                                    <field name="send_date"/>
+                                    <field name="execution_date"/>
+                                    <field name="response_data"/>
+                                    <field name="state" 
+                                        widget="badge" 
                                         decoration-success="state == 'done'"
                                         decoration-primary="state == 'sent'"
-                                        decoration-info="state == 'draft'"
+                                        decoration-info="state == 'draft'" 
                                         decoration-warning="state == 'pending'"
                                         decoration-danger="state == 'failed'"
-                                    />
+                                    /> -->
                                 </list>
                             </field>
                         </page>
@@ -232,12 +232,12 @@
                     tabindex="-1">New Device</a> to add a fingerprint device. </p>
         </field>
     </record>
-
-    <menuitem id="menu_biometric_devices"
-        name="Devices Fingerprint"
-        parent="menu_hr_fingerprint_main"
-        action="action_hr_fingerprint_device"
-        sequence="10" />
+             
+    <menuitem id="menu_biometric_devices" 
+              name="Devices Fingerprint" 
+              parent="menu_hr_fingerprint_main"
+              action="action_hr_fingerprint_device"
+              sequence="10"/>
 
     <!-- Inherit IoT Device view to add ZKTeco fields -->
     <!-- <record id="view_iot_device_form_inherit" model="ir.ui.view">

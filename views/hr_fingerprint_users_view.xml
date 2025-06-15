@@ -6,17 +6,16 @@
         <field name="model">hr.fingerprint.user</field>
         <field name="arch" type="xml">
             <list>
-                <field name="device_id" />
-                <field name="name" />
-                <field name="partner_id" />
-                <field name="user_id" />
-                <field name="privilege" />
-                <field name="active_user" widget="boolean_toggle" />
-                <field name="image" widget="image" options="{'size': [23, 27]}" class="oe_avatar"
-                    invisible="connection_device_mode == 'push'" />
+                <field name="device_id"/>
+                <field name="name" widget=""/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="privilege"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="image" widget="image" options="{'size': [23, 27]}" class="oe_avatar"/>
             </list>
         </field>
-    </record>
+    </record> 
 
     <!-- Form View for Biometric Users -->
     <record id="view_hr_fingerprint_user_form" model="ir.ui.view">
@@ -25,30 +24,28 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
-                    <field name="image" widget="image" class="oe_avatar"
-                        invisible="connection_device_mode == 'push'"
-                        options="{'convert_to_webp': True, 'preview_image': 'image_128'}"
-                    />
+                    <field name="image" widget="image" class="oe_avatar" options="{'convert_to_webp': True, 'preview_image': 'image_128'}"/>
                     <group>
                         <group>
-                            <field name="name" />
-                            <field name="partner_id" widget="many2one_avatar_user" />
-                            <field name="card" />
+                            <field name="name"/>
+                            <field name="partner_id" widget="many2one_avatar_user"/>
+                            <field name="card"/>
                         </group>
                         <group>
-                            <field name="user_id" />
-                            <field name="group_id" />
+                            <field name="user_id"/>
+                            <field name="group_id"/>
+                            <field name="password"/>
                         </group>
                     </group>
                     <group string="More Information">
                         <group>
-                            <field name="password" groups="base.group_system" />
-                            <field name="start_datetime" />
+                            <field name="password"/>
+                            <field name="start_datetime"/>
                         </group>
                         <group>
-                            <field name="privilege" />
-                            <field name="end_datetime" />
-                            <field name="active_user" />
+                            <field name="privilege"/>
+                            <field name="end_datetime"/>
+                            <field name="active"/>
                         </group>
                     </group>
                     <notebook>
@@ -73,6 +70,24 @@
                         <page name="user_biometric_data" string="Biometric Data">
                             <field name="biometric_data_ids" widget="one2many">
                                 <list editable="bottom">
+                                    <field name="device_id"/>
+                                    <field name="punching_time"/>
+                                    <field name="punch_type"/>
+                                    <field name="attendance_type"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page name="user_template" string="Templates">
+                            <field name="template_ids" widget="one2many">
+                                <list editable="bottom">
+                                    <field name="finger_name"/>
+                                    <field name="template"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page name="user_biometric_data" string="Biometric Data">
+                            <field name="biometric_data_ids" widget="one2many">
+                                <list editable="bottom">
                                     <field name="index" />
                                     <field name="template" />
                                 </list>
@@ -90,25 +105,20 @@
         <field name="arch" type="xml">
             <search>
                 <!-- بحث سريع -->
-                <field name="name" string="User Name" />
-                <field name="device_id" string="Device" />
-                <field name="user_id" string="Device User ID" />
+                <field name="name" string="User Name"/>
+                <field name="device_id" string="Device"/>
+                <field name="user_id" string="Device User ID"/>
 
                 <!-- فلترات أساسية -->
-                <filter name="active_users" string="Active Users"
-                    domain="[('active_user', '=', True)]" />
-                <filter name="inactive_users" string="Inactive Users"
-                    domain="[('active_user', '=', False)]" />
-                <filter name="admins" string="Admins" domain="[('privilege', 'in', ['6','14'])]" />
+                <filter name="active_users" string="Active Users" domain="[('active', '=', True)]"/>
+                <filter name="inactive_users" string="Inactive Users" domain="[('active', '=', False)]"/>
+                <filter name="admins" string="Admins" domain="[('privilege', 'in', ['6','14'])]"/>
 
                 <!-- تجميعات -->
                 <group expand="1" string="Group By">
-                    <filter name="group_by_device" string="By Device"
-                        context="{'group_by': 'device_id'}" />
-                    <filter name="group_by_privilege" string="By Privilege"
-                        context="{'group_by': 'privilege'}" />
-                    <filter name="group_by_active" string="By Active Status"
-                        context="{'group_by': 'active_user'}" />
+                    <filter name="group_by_device" string="By Device" context="{'group_by': 'device_id'}"/>
+                    <filter name="group_by_privilege" string="By Privilege" context="{'group_by': 'privilege'}"/>
+                    <filter name="group_by_active" string="By Active Status" context="{'group_by': 'active'}"/>
                 </group>
             </search>
         </field>
@@ -123,12 +133,10 @@
                 You can manage biometric users here.
             </p>
             <p>
-                Use the search bar to find specific users or filter by active status, device, or
-                privilege.
+                Use the search bar to find specific users or filter by active status, device, or privilege.
             </p>
         </field>
     </record>
     <!-- Menu Item for Biometric Users -->
-    <menuitem id="hr_fingerprint_user_menu_action" sequence="20" name="Data Users"
-        action="action_hr_fingerprint_user" parent="hr_fingerprint_user_menu" />
+    <menuitem id="hr_fingerprint_user_menu_action" sequence="20" name="Data Users" action="action_hr_fingerprint_user" parent="hr_fingerprint_user_menu"/>
 </odoo>

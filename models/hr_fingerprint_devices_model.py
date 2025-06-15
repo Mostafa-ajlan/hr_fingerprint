@@ -946,15 +946,13 @@ class HrFingerprintDevice(models.Model):
     #             self._live_threads.pop(identifier, None)        
 
 
-    # push protocol functions 
+    # push protocol functions
     def process_attendance_data(self, data, stamp):
         """
         processing attendance data from the device
         :param data: the raw data from the device
         :param stamp: the timestamp of the data
         """
-        _logger.info(f"Processing attendance data for device {self.serial_number}")
-
         Attendance = self.env['fingerprint.attendance']
         User = self.env['hr.fingerprint.user']
         
@@ -1011,19 +1009,18 @@ class HrFingerprintDevice(models.Model):
         # update the last attendance log stamp
         if stamp and stamp.isdigit():
             self.write({'last_attlog_stamp': int(stamp)})
-        _logger.info(f"Processed attendance records for device {self.serial_number}")
 
     def process_operation_log(self, data, stamp):
         """
         Process operation log data from the device.
         """
+        # Process each line of the operation log
         for line in data.split('\n'):
-            _logger.info(f"RRRRRRRRRRRRRRRRRRRRR: {line}")
-
             if line.startswith('USERPIC'):
-                
+                # user picture data processing
                 self.user_pic_data(line)
             elif line.startswith('BIOPHOTO') :
+                # user bio photo data processing
                 self.user_bio_photo_data(line)
             elif line.startswith('ATTLOG'):
                 # attendance data processing
@@ -1032,17 +1029,19 @@ class HrFingerprintDevice(models.Model):
                 # operation log processing
                 self.process_operation_log(line, None)
             elif line.startswith('FP'):
+                # fingerprint data processing
                 self.process_fingerprint_data(line)
             elif line.startswith('USER'):
+                # user information processing
                 self.create_or_update_user_info(line)
             elif line.startswith('BIODATA'):
+                # biometric data processing
                 self.process_biometric_file(line)
             else:
                 _logger.info(f"Unknown operation log line: {line}")
         if stamp and stamp.isdigit():
             self.write({'last_operlog_stamp': int(stamp)})
         _logger.info(f"Processed operation logs successfully")
-
     
     def process_biometric_file(self, file_content):
         """
@@ -1078,8 +1077,10 @@ class HrFingerprintDevice(models.Model):
             if not user:
                 raise ValueError(f"No biometric user found with ID {user_id}")
 
+            # create or update biometric data
             biometric = self.env['hr.fingerprint.user.biometric'].sudo().search([
                 ('user_id', '=', user.id),
+                ('device_id', '=', self.id),
                 ('index', '=', int(index)),
                 ('type', '=', int(type_)),
             ], limit=1)
@@ -1087,6 +1088,7 @@ class HrFingerprintDevice(models.Model):
                 # create a new biometric template
                 self.env['hr.fingerprint.user.biometric'].sudo().create({
                     'user_id': user.id,
+                    'device_id': self.id,
                     'no': int(no),
                     'index': int(index),
                     'valid': bool(int(valid)),
@@ -1098,6 +1100,7 @@ class HrFingerprintDevice(models.Model):
                     'template': tmp.strip(),
                 })
             else:
+                # update existing biometric template
                 biometric.write({
                     'no': int(no),
                     'valid': bool(int(valid)),
@@ -1158,9 +1161,9 @@ class HrFingerprintDevice(models.Model):
                 # 'vice_card': user_data.get('ViceCard'),
             })
     
-    
     def process_fingerprint_data(self, response_text):
         """
+        Parses a fingerprint response from the device and updates or creates the fingerprint template for a user.
         Example line:
         FP PIN=1 FID=6 Size=496 Valid=1 TMP=...
 
@@ -1173,7 +1176,7 @@ class HrFingerprintDevice(models.Model):
             size = None
             valid = None
             tmp = None
-
+            
             for part in parts:
                 if part.startswith("PIN="):
                     user_id = part.split("=")[1]
@@ -1218,9 +1221,9 @@ class HrFingerprintDevice(models.Model):
         except Exception as e:
             _logger.error(f"Error handling FP response: {e}")
             
-    
-    def user_pic_data(self, response_text):
+    def user_pic_data(self, response_text): 
         """
+        Parses a user picture response from the device and updates the user's picture data.
         Example response:
         USERPIC PIN=1 FileName=1.jpg Size=8188 Content=/9j/4AAQSkZJRgABAQAAAQABAAD/...
         """
@@ -1258,47 +1261,12 @@ class HrFingerprintDevice(models.Model):
         except Exception as e:
             _logger.error(f"Error handling USERPIC response: {e}")
             
-    
     def user_bio_photo_data(self, response_text):
         """ 
         Example response:
         BIOPHOTO PIN=1 FileName=1.jpg Size=8188 Content=/9j/4AAQSkZJRgABAQAAAQABAAD/...
         """
         print(f"BIOPHOTO response: {response_text}")
-        # try:
-        #     # parse the response text
-        #     parts = response_text.strip().split()
-        #     user_id = None
-        #     file_name = None
-        #     size = None
-        #     content = None
-        #     # "BIOPHOTO PIN=12	FileName=12.jpg	Type=9	Size=265592	Content=/9j/4AAQSkZJRgABAQAAAQABAAD/
-
-        #     for part in parts:
-        #         if part.startswith("PIN="):
-        #             user_id = part.split("=")[1]
-        #         elif part.startswith("FileName="):
-        #             file_name = part.split("=")[1]
-        #         elif part.startswith("Size="):
-        #             size = int(part.split("=")[1])
-        #         elif part.startswith("Content="):
-        #             content = response_text.split("Content=")[1]  # كل ما بعد Content=
-
-        #     if not (user_id and content):
-        #         raise ValueError("Incomplete USERPIC data")
-
-        #     # check if the user exists
-        #     user = self.env['hr.fingerprint.user'].sudo().search([('user_id', '=', user_id)], limit=1)
-        #     if not user:
-        #         raise ValueError(f"No BIOPHOTO user found with ID {user_id}")
-
-        #     # save the user image
-        #     user.image = content
-        #     user.image_filename = file_name
-        #     user.image_size = size
-
-        # except Exception as e:
-        #     _logger.error(f"Error handling BIOPHOTO response: {e}")
             
     def get_pending_commands(self):
         """

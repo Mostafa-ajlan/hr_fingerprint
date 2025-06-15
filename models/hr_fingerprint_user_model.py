@@ -62,7 +62,6 @@ class HrFingerprintUser(models.Model):
     start_datetime = fields.Datetime(string='Start Validity', help="Start date and time for user validity")
     end_datetime = fields.Datetime(string='End Validity', help="End date and time for user validity")
     
-    
     template_ids = fields.One2many('hr.fingerprint.template', 'user_id', string='Fingerprints' , help="Fingerprints associated with this user")
     biometric_data_ids = fields.One2many(
         'hr.fingerprint.user.biometric', 'user_id', string='Biometric Data'
