@@ -179,46 +179,6 @@ class HrFingerprintUser(models.Model):
                 result_records += record
         return result_records
 
-    # @api.model_create_multi
-    # def create(self, vals_list):
-    #     result_records = self.env['hr.fingerprint.user']
-    #     for vals in vals_list:
-    #         if 'from_frontend' in self.env.context:
-    #             cr = self.env.cr
-    #             try:
-    #                 # 1. أنشئ السجل أولاً
-    #                 record = super(HrFingerprintUser, self).create([vals])
-    #                 mode = record.connection_device_mode
-    #                 if mode == 'direct':
-    #                     # أضف المستخدم للجهاز
-    #                     if not self._sync_user_in_device(record.device_id, user=None, vals=vals):
-    #                         cr.rollback()
-    #                         raise UserError(_("فشل إضافة المستخدم للجهاز. لم يتم حفظ المستخدم لأن الجهاز غير متوفر."))
-    #                     result_records += record
-    #                     cr.commit()
-    #                 elif mode == 'iot':
-    #                     # سيناريو iot: فقط احفظ السجل، ويمكنك هنا إضافة منطق إرسال رسالة للـ IoT Box إذا كان متوفرًا
-    #                     result_records += record
-    #                     cr.commit()
-    #                 elif mode == 'push':
-    #                     # سيناريو push: فقط احفظ السجل، وسيتم إرسال المستخدم لاحقًا عند توافر الاتصال
-    #                     result_records += record
-    #                     cr.commit()
-    #                 else:
-    #                     # وضع غير معروف: احفظ السجل فقط
-    #                     result_records += record
-    #                     cr.commit()
-    #             except Exception as e:
-    #                 cr.rollback()
-    #                 _logger.error("Error creating user: %s", str(e))
-    #                 raise
-    #         else:
-    #             # من الخلفية: احفظ السجل فقط
-    #             record = super(HrFingerprintUser, self).create([vals])
-    #             result_records += record
-    #     return result_records
-    
-
     def write(self, vals):
         for user in self:
             # إذا لم يكن الطلب من الواجهة الأمامية، فقط عدل في القاعدة

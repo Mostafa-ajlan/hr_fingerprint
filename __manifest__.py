@@ -5,7 +5,7 @@
     'summary': "Integration with Diferent biometric devices via direct connection or IoT Box",
 
     'description': """
-        This apjhgjgplication allows handling fingerprint functions 
+        This application allows handling fingerprint functions 
         across different devices connected either via IoT or directly.
     """,
 
