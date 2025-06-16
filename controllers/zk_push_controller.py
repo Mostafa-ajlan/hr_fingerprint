@@ -80,6 +80,7 @@ class ZKPushProtocolController(http.Controller):
         table = params.get('table')
         stamp = params.get('Stamp')
         data = request.httprequest.data.decode('utf-8')
+        print(f"table: {table}")
         if table == 'ATTLOG':
             # attendance data processing
             device.process_attendance_data(data, stamp)
@@ -194,7 +195,6 @@ class ZKPushProtocolController(http.Controller):
             # مثال: الرد يحتوي على ID=123&Return=0
             for line in content.split('\n'):
                 if 'ID=' in line:
-                    print(f"Serial Number: {line}")
                     cmd_id = line.split('ID=')[1].split('&')[0]
                     print(f"Command ID: {cmd_id}")
                     print(f"Serial Number: {line}")

@@ -19,48 +19,11 @@ export class FingerprintUserFormController extends FormController {
             isActive: true, // هل المستخدم نشط
         });
 
-        // تتبع التغييرات في بيانات النموذج
-        // onWillUpdateProps(() => {
-        //     this.updateStateFromRecord();
-        // });
-        // useEffect(
-        //     () => {
-        //         if (this.model.root) {
-        //             const fieldValue = this.model.root.data.active_user;
-        //             console.log(`Field value changed to: ${fieldValue}`);
-        //             this.handleFieldChange(fieldValue);
-        //         }
-        //     },
-        //     () => [this.model.root?.data.active_user]
-        // );
+        
 
     }
 
-    // handleFieldChange(newValue) {
-    //     console.log(`Field value changed to: ${newValue}`);
-    //     // تنفيذ المنطق المطلوب عند تغيير القيمة
-    // }
-
-    // updateStateFromRecord() {
-    //     const record = this.model.root;
-    //     if (!record || record.isNew) {
-    //         return;
-    //     }
-    //     const data = record.data;
-    //     // تحديث الحالة الأصلية إذا لم تكن محددة بعد
-    //     if (Object.keys(this.state.originalData).length === 0) {
-    //         this.state.originalData = {
-    //             name: data.name,
-    //             device_id: data.device_id,
-    //             active_user: data.active_user,
-    //         };
-    //     }
-    //     // تحديث حالة التغييرات
-    //     this.state.nameChanged = data.name !== this.state.originalData.name;
-    //     this.state.deviceChanged = data.device_id?.[0] !== this.state.originalData.device_id?.[0];
-    //     this.state.isActive = data.active_user;
-    //     this.state.isIotDevice = data.device_id[0]
-    // }
+   
 
     async saveButtonClicked(params = {}) {
         const record = this.model.root;

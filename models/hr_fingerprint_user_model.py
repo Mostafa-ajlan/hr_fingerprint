@@ -11,66 +11,70 @@ except ImportError:
 
 class HrFingerprintUser(models.Model):
     _name = 'hr.fingerprint.user'
-    _description = 'Fingerprint User'
+    _description = _('Fingerprint User')
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _rec_name = 'name'  # Display name in the UI 
+    _order = 'create_date desc, name'  # Order by creation date (desc) and then by name
 
     _sql_constraints = [
         ('unique_uid_per_device', 'unique(uid, device_id)', 'UID must be unique per device!'),
         ('unique_user_id_per_device', 'unique(user_id, device_id)', 'User ID must be unique per device!'),
     ]  
-    name = fields.Char(string='Name', required=True)  
+    name = fields.Char(string=_('Name'), required=True)  
 
     device_id = fields.Many2one(
         'hr.fingerprint.device', 
-        string='Device', 
+        string=_('Device'), 
         required=True, 
         ondelete='cascade',
     ) 
-    connection_device_mode = fields.Selection(related='device_id.connection_mode', string='Connection Mode', readonly=True)
+    connection_device_mode = fields.Selection(related='device_id.connection_mode', string=_('Connection Mode'), readonly=True)
     
     partner_id = fields.Many2one(
         'res.partner', 
-        string="Partner", 
+        string=_("Partner"), 
         compute='_compute_partner_id', 
-        store=True
+        store=True,
+        readonly=False
     )
     user_id = fields.Char(
-        string='User ID', 
+        string=_("User ID"), 
         default=False,
         index=True,
-        help='User ID in the fingerprint device'
+        help=_('User ID in the fingerprint device')
     )
     uid = fields.Char(
-        string='UID', 
+        string=_("UID"), 
         default=False,
-        help='Unique ID for the user in the fingerprint device'
+        help=_('Unique ID for the user in the fingerprint device')
     )
     privilege = fields.Selection([
         ('0', 'User'),
         ('2', 'Enroller'),
         ('6', 'Admin'),
         ('14', 'Super Admin')
-    ], string='Privilege', default='0',)
-    
-    password = fields.Char(string='Password',)
-    group_id = fields.Char(string='Group ID')
-    card = fields.Char(string='Card Number',)
+    ], string=_('Privilege'), default='0',)
+
+    password = fields.Char(string=_('Password'),)
+    group_id = fields.Char(string=_('Group ID'))
+    card = fields.Char(string=_('Card Number'),)
     active_user = fields.Boolean(default=True)
-    
-    image = fields.Char(string='Image', attachment=True)
-    image_filename = fields.Char(string='Image File Name', help="File name of the user photo")
-    image_size = fields.Integer(string='Image Size (bytes)', help="Size of the user photo in bytes")
-    start_datetime = fields.Datetime(string='Start Validity', help="Start date and time for user validity")
-    end_datetime = fields.Datetime(string='End Validity', help="End date and time for user validity")
-    
-    
-    template_ids = fields.One2many('hr.fingerprint.template', 'user_id', string='Fingerprints' , help="Fingerprints associated with this user")
+
+    image = fields.Char(string=_('Image'), attachment=True)
+    image_filename = fields.Char(string=_('Image File Name'), help=_("File name of the user photo"))
+    image_size = fields.Integer(string=_('Image Size (bytes)'), help=_("Size of the user photo in bytes"))
+    start_datetime = fields.Datetime(string=_('Start Validity'), help=_("Start date and time for user validity"))
+    end_datetime = fields.Datetime(string=_('End Validity'), help=_("End date and time for user validity"))
+
+
+    template_ids = fields.One2many('hr.fingerprint.template', 'user_id', string=_('Fingerprints'), help=_("Fingerprints associated with this user"))
     biometric_data_ids = fields.One2many(
-        'hr.fingerprint.user.biometric', 'user_id', string='Biometric Data'
+        'hr.fingerprint.user.biometric', 'user_id', string=_('Biometric Data')
     )
     attendance_ids = fields.One2many(
-        'fingerprint.attendance', 'user_id', string='Attendances',
+        'fingerprint.attendance', 
+        'user_id', 
+        string=_('Attendances')
     )
 
     
@@ -222,17 +226,17 @@ class HrFingerprintUser(models.Model):
 # Model to hold biometric data for users 
 class HRFingerprintUserBiometric(models.Model):
     _name = 'hr.fingerprint.user.biometric'
-    _description = 'Biometric Data'
+    _description = _('Biometric Data')
 
     user_id = fields.Many2one('hr.fingerprint.user', 'User', required=True)
-    index = fields.Integer(string='Index')
-    valid = fields.Boolean(string='Valid')
-    duress = fields.Boolean(string='Duress')
-    version_major = fields.Integer(string="Major Ver")
-    version_minor = fields.Integer(string="Minor Ver")
+    index = fields.Integer(string=_('Index'))
+    valid = fields.Boolean(string=_('Valid'))
+    duress = fields.Boolean(string=_('Duress'))
+    version_major = fields.Integer(string=_("Major Ver"))
+    version_minor = fields.Integer(string=_("Minor Ver"))
     no = fields.Integer()
-    type = fields.Integer(string='Biometric Type')  # 2: Palm, 8: Face
+    type = fields.Integer(string=_('Biometric Type'))  # 2: Palm, 8: Face
     major_ver = fields.Integer()
     minor_ver = fields.Integer()
     format = fields.Integer()
-    template = fields.Text(string='Biometric Template')
+    template = fields.Text(string=_('Biometric Template'))

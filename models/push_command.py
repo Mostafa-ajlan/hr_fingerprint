@@ -7,37 +7,37 @@ _logger = logging.getLogger(__name__)
 
 class ZKDeviceCommand(models.Model):
     _name = 'fingerprint.device.command'
-    _description = 'Fingerprint Device Command'
+    _description = _('Fingerprint Device Command')
     _order = 'create_date desc'
-    
-    device_id = fields.Many2one('hr.fingerprint.device', 'Device', required=True)
-    command_id = fields.Char('Command ID', required=True)
+
+    device_id = fields.Many2one('hr.fingerprint.device',string=_('Device'), required=True)
+    command_id = fields.Char(string=_('Command ID'), required=True)
     command_type = fields.Selection([
-        ('update_user', 'تحديث مستخدم'),
-        ('delete_user', 'حذف مستخدم'),
-        ('update_fingerprint', 'تحديث بصمة'),
-        ('update_face', 'تحديث وجه'),
-        ('update_userpic', 'تحديث صورة مستخدم'),
-        ('send_sms', 'إرسال رسالة'),
-        ('query_attlog', 'استعلام سجلات الحضور'),
-        ('query_userinfo', 'استعلام معلومات مستخدم'),
-        ('reboot_device', 'اعادة تشغيل الجهاز'),
-        ('query_all_users', 'جلب كل المستخدمين')
-    ], string='نوع الأمر', required=True)
-    command_data = fields.Text(string='بيانات الأمر',compute="_compute_command_data" , store=True)
+        ('update_user', _("Update User")),
+        ('delete_user', _('Delete User')),
+        ('update_fingerprint', _('Update Fingerprint')),
+        ('update_face', _('Update Face')),
+        ('update_userpic', _('Update User Picture')),
+        ('send_sms', _('Send SMS')),
+        ('query_attlog', _('Query Attendance Logs')),
+        ('query_userinfo', _('Query User Info')),
+        ('reboot_device', _('Reboot Device')),
+        ('query_all_users', _('Fetch All Users'))
+    ], string=_('Command Type'), required=True)
+    command_data = fields.Text(string=_('Command Data'), compute="_compute_command_data", store=True)
     state = fields.Selection([
-        ('draft', 'مسودة'),
-        ('pending', 'معلق'),
-        ('sent', 'تم الإرسال'),
-        ('done', 'مكتمل'),
-        ('failed', 'فشل')
-    ], string='الحالة', default='draft')
-    return_code = fields.Char('Return Code')
-    create_date = fields.Datetime('Creation Date', default=fields.Datetime.now)
-    send_date = fields.Datetime('Send Date')
-    execution_date = fields.Datetime('Execution Date')
-    response_data = fields.Text('Response Data')
-    
+        ('draft', _('Draft')),
+        ('pending', _('Pending')),
+        ('sent', _('Sent')),
+        ('done', _('Done')),
+        ('failed', _('Failed'))
+    ], string=_('State'), default='draft')
+    return_code = fields.Char(string=_('Return Code'))
+    create_date = fields.Datetime(string=_('Creation Date'), default=fields.Datetime.now)
+    send_date = fields.Datetime(string=_('Send Date'))
+    execution_date = fields.Datetime(string=_('Execution Date'))
+    response_data = fields.Text(string=_('Response Data'))
+
     def name_get(self):
         result = []
         for record in self:

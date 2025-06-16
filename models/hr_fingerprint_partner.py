@@ -5,10 +5,10 @@ class PartnerFingerprintMachine(models.Model):
     _inherit = 'res.partner'
 
     _sql_constraints = [
-        ('unique_fingerprint_user_number', 'unique(fingerprint_user_number)', 'Fingerprint User Number must be unique!')
+        ('unique_fingerprint_user_number', 'unique(fingerprint_user_number)', _('Fingerprint User Number must be unique!'))
     ]
 
-    fingerprint_user_number = fields.Char(string='Fingerprint User Number', help='fingerprint user number is the user_id in fingerprint devices')
+    fingerprint_user_number = fields.Char(string=_("Fingerprint User Number"), help=_("fingerprint user number is the user_id in fingerprint devices"))
 
     # def unlink(self):
     #     for partner in self:

@@ -1,24 +1,24 @@
-from odoo import api, fields, models
+from odoo import api, fields, models , _
 
 class IotFingerprintMachine(models.Model):
     _inherit = 'iot.device'
 
     type = fields.Selection(
-        selection_add=[('biometric', 'Biometric Device')],
+        selection_add=[('biometric', _('Biometric Device'))],
         ondelete={'biometric': 'cascade'}
     )
 
     # For Fingerprint devices
-    ip_address = fields.Char(string='IP Address', readonly=True, help="IP address of the fingerprint device, if not set, the device will be detected automatically.")
-    
-    port = fields.Integer(string='Port', readonly=True, help="Port of the device, if not set, the device will be detected automatically.")
-    
-    password = fields.Char(string='Fingerprint Password', default='0', help="Fingerprint password of the device, if not set, the device will be detected automatically.")
+    ip_address = fields.Char(string=_("IP Address"), readonly=True, help=_("IP address of the fingerprint device, if not set, the device will be detected automatically."))
+
+    port = fields.Integer(string=_("Port"), readonly=True, help=_("Port of the device, if not set, the device will be detected automatically."))
+
+    password = fields.Char(string=_("Fingerprint Password"), default='0', help=_("Fingerprint password of the device, if not set, the device will be detected automatically."))
 
     protocol = fields.Selection([
         ('tcp', 'TCP'),
         ('udp', 'UDP'),
-    ], string='Protocol', readonly=True, default='tcp', help="Protocol of the device, if not set, the device will be detected automatically.")
+    ], string=_('Protocol'), readonly=True, default='tcp', help=_("Protocol of the device, if not set, the device will be detected automatically."))
 
     @api.model
     def get_iot_box_data(self, device_id, display_name = None):
