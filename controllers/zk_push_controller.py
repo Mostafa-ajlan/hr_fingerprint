@@ -81,9 +81,6 @@ class ZKPushProtocolController(http.Controller):
         table = params.get('table')
         stamp = params.get('Stamp')
         data = request.httprequest.data.decode('utf-8')
-        _logger.info(f"AAAAAAAAAAAAAAAA: {data}")
-        
-        print(f"Table: {table}, Stamp: {stamp}")
         if table == 'ATTLOG':
             # attendance data processing
             device.process_attendance_data(data, stamp)
@@ -104,7 +101,6 @@ class ZKPushProtocolController(http.Controller):
             # user picture data processing
             device.user_pic_data(data)
         elif table == 'BIOPHOTO' :
-            _logger.info(f"333333333333333333: {line}")
             device.user_bio_photo_data(line)
         else:
             _logger.warning(f"Unknown table type: {table} for device {device.serial_number}")
