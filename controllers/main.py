@@ -34,7 +34,8 @@ class FingerprintsController(http.Controller):
     def _prepare_device_data(self, iot_device, data):
         """إعداد بيانات جهاز البصمة بشكل مسبق"""
         return {
-            'name': data.get('device_name'),
+            'name': data.get('display_name') if 'display_name' in data else data.get('device_name'),
+            'device_name': data.get('device_name'),
             'connection_mode': 'iot',
             'connection_type': iot_device.connection,
             'ip_address': iot_device.ip_address,
@@ -55,13 +56,16 @@ class FingerprintsController(http.Controller):
         existing_users = request.env['hr.fingerprint.user'].sudo().search([
             ('device_id', '=', device_id)
         ])
+        print(device_id,"device_iddevice_iddevice_id")
         existing_user_map = {u.user_id: u for u in existing_users}
         
         to_create = []
         to_update = []
         
         for user in users_data:
+            print("UUUUUUUUU",user)
             user_vals = {
+                'device_id': device_id,
                 'uid': str(user.get('uid')),
                 'user_id': user.get('user_id'),
                 'name': user.get('name'),
@@ -69,7 +73,6 @@ class FingerprintsController(http.Controller):
                 'password': user.get('password', ''),
                 'group_id': user.get('group_id', ''),
                 'card': str(user.get('card', '0')),
-                'device_id': device_id
             }
             
             if user.get('user_id') in existing_user_map:
@@ -92,6 +95,7 @@ class FingerprintsController(http.Controller):
             attendance_data = [attendance_data]
         
         for att in attendance_data:
+            print("attttt",att)
             attendance_vals_list.append({
                 'device_id': device_id,
                 'user_id': att.get('user_id'),
@@ -176,9 +180,7 @@ class FingerprintsController(http.Controller):
         
         try:
             if action == 'save_fingerprint_device_info':
-
                 fingerprint_device = self._get_fingerprint_device(iot_device.id)
-                
                 device_data = self._prepare_device_data(iot_device, data)
                 if fingerprint_device:
                     fingerprint_device.write(device_data)
@@ -186,7 +188,7 @@ class FingerprintsController(http.Controller):
                 else:
                     fingerprint_device = request.env['hr.fingerprint.device'].sudo().create(device_data)
                     operation = 'created'
-                
+                    
                 request.env['bus.bus']._sendone(iot_channel, 'fingerprint_iot_devices', {
                     'action_type': 'save_fingerprint_device_info',
                     'device_identifier': device_identifier,
@@ -233,6 +235,16 @@ class FingerprintsController(http.Controller):
             elif action == 'reboot_device':
                 request.env['bus.bus']._sendone(iot_channel, 'fingerprint_iot_devices', {
                     'action_type': 'reboot_device',
+                    'device_identifier': device_identifier,
+                })
+            elif action == 'sync_time':
+                request.env['bus.bus']._sendone(iot_channel, 'fingerprint_iot_devices', {
+                    'action_type': 'sync_time',
+                    'device_identifier': device_identifier,
+                })
+            elif action == 'create_or_update_user':
+                request.env['bus.bus']._sendone(iot_channel, 'fingerprint_iot_devices', {
+                    'action_type': 'create_or_update_user',
                     'device_identifier': device_identifier,
                 })
 

@@ -6,14 +6,18 @@ class FingerprintMachineAttendance(models.Model):
     _name = 'fingerprint.attendance'
     _description = 'Attendance'
     _order = 'punching_time desc'
-    rec_name = 'user_id.name'
+    # rec_name = 'user_id.name'
     
     device_id = fields.Many2one(
         'hr.fingerprint.device', 
         string='Fingerprint Device',
         readonly=True,
+        required=True
     )
-    
+    # partner_id = fields.Many2one(
+    #     'res.partner', 
+    #     string="Partner", 
+    # )
     user_id = fields.Many2one(
         'hr.fingerprint.user',
         string='User'
@@ -57,5 +61,4 @@ class FingerprintMachineAttendance(models.Model):
                 user = self.env['hr.fingerprint.user'].browse(vals['user_id'])
                 vals['user_id'] = user.id if user.exists() else False
 
-        return super().create(vals_list)      
-  
+        return super().create(vals_list)        
