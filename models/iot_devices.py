@@ -21,7 +21,7 @@ class IotFingerprintMachine(models.Model):
     ], string='Protocol', readonly=True, default='tcp', help="Protocol of the device, if not set, the device will be detected automatically.")
 
     @api.model
-    def get_iot_box_data(self, device_id, display_name):
+    def get_iot_box_data(self, device_id, display_name = None):
         """
         """
         print("uutyutuytuyrtchgvcjh")
@@ -32,6 +32,7 @@ class IotFingerprintMachine(models.Model):
             if not device.connected:
                 fingerprint_device = self.env['hr.fingerprint.device'].search([('iot_device_id', '=', device.id)], limit=1)
                 if not fingerprint_device:
+                    print("WWWWWWWWWWWWWWWWW")
                     self.env['hr.fingerprint.device'].create({
                         'name': display_name if display_name else device.name,
                         'connection_mode': 'iot',
@@ -40,13 +41,7 @@ class IotFingerprintMachine(models.Model):
                         'port': device.port,
                         'password': device.password,
                         'protocol': device.protocol,
-                        'serial_number': '',
-                        'firmware_version': '',
-                        'platform': '',
                         'iot_device_id': device.id,
-                        'subnet_mask': '',
-                        'gateway': '',
-                        'connection_status': 'disconnected',
                     })
                     create = True  
 
@@ -65,3 +60,5 @@ class IotFingerprintMachine(models.Model):
                 'create': create,
             }
         return False
+
+   

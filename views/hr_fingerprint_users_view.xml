@@ -16,14 +16,17 @@
                     invisible="connection_device_mode == 'push'" />
             </list>
         </field>
-    </record> 
+    </record>
 
     <!-- Form View for Biometric Users -->
     <record id="view_hr_fingerprint_user_form" model="ir.ui.view">
         <field name="name">hr.fingerprint.user.form</field>
         <field name="model">hr.fingerprint.user</field>
         <field name="arch" type="xml">
-            <form>
+            <form js_class="fingerprint_user_form">
+                <header>
+                    <!-- <button type="object" name="call_js_function" string="call js function"></button> -->
+                </header>
                 <sheet>
                     <field name="image" widget="image" class="oe_avatar"
                         invisible="connection_device_mode == 'push'"
@@ -36,6 +39,7 @@
                             <field name="card" />
                         </group>
                         <group>
+                            <field name="device_id" />
                             <field name="user_id" />
                             <field name="group_id" />
                         </group>
@@ -43,16 +47,16 @@
                     <group string="More Information">
                         <group>
                             <field name="password" groups="base.group_system" />
-                            <field name="start_datetime" />
+                            <field name="privilege" />
+                            <field name="start_datetime" invisible="connection_device_mode != 'push'" />
                         </group>
                         <group>
-                            <field name="privilege" />
-                            <field name="end_datetime" />
+                            <field name="end_datetime" invisible="connection_device_mode != 'push'" />
                             <field name="active_user" />
                         </group>
                     </group>
                     <notebook>
-                        <page name="user_attendance" string="Attendance">
+                        <page name="user_attendance" string="Attendance" invisible="not id">
                             <field name="attendance_ids" widget="one2many">
                                 <list editable="bottom" limit="10">
                                     <field name="device_id" />
@@ -62,7 +66,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page name="user_template" string="Templates">
+                        <page name="user_template" string="Templates" invisible="not id">
                             <field name="template_ids" widget="one2many">
                                 <list editable="bottom" limit="10">
                                     <field name="finger_name" />
@@ -70,23 +74,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page name="user_biometric_data" string="Biometric Data">
-                            <field name="biometric_data_ids" widget="one2many">
-                                <list editable="bottom">
-                                    <field name="index" />
-                                    <field name="template" />
-                                </list>
-                            </field>
-                        </page>
-                        <page name="user_template" string="Templates">
-                            <field name="template_ids" widget="one2many">
-                                <list editable="bottom">
-                                    <field name="finger_name"/>
-                                    <field name="template"/>
-                                </list>
-                            </field>
-                        </page>
-                        <page name="user_biometric_data" string="Biometric Data">
+                        <page name="user_biometric_data" string="Biometric Data" invisible="not id">
                             <field name="biometric_data_ids" widget="one2many">
                                 <list editable="bottom">
                                     <field name="index" />
@@ -136,7 +124,7 @@
         <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                You can manage biometric users here.
+                You can manage biometric users here .
             </p>
             <p>
                 Use the search bar to find specific users or filter by active status, device, or
