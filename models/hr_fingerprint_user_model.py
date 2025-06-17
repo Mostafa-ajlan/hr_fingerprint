@@ -31,11 +31,12 @@ class HrFingerprintUser(models.Model):
     connection_device_mode = fields.Selection(related='device_id.connection_mode', string=_('Connection Mode'), readonly=True)
     
     partner_id = fields.Many2one(
-        'res.partner', 
-        string=_("Partner"), 
-        compute='_compute_partner_id', 
+        'res.partner',
+        string=_("Partner"),
+        compute='_compute_partner_id',
         store=True,
-        readonly=False
+        readonly=False,
+        ondelete='set null'
     )
     user_id = fields.Char(
         string=_("User ID"), 
@@ -66,7 +67,6 @@ class HrFingerprintUser(models.Model):
     start_datetime = fields.Datetime(string=_('Start Validity'), help=_("Start date and time for user validity"))
     end_datetime = fields.Datetime(string=_('End Validity'), help=_("End date and time for user validity"))
 
-
     template_ids = fields.One2many('hr.fingerprint.template', 'user_id', string=_('Fingerprints'), help=_("Fingerprints associated with this user"))
     biometric_data_ids = fields.One2many(
         'hr.fingerprint.user.biometric', 'user_id', string=_('Biometric Data')
@@ -76,8 +76,6 @@ class HrFingerprintUser(models.Model):
         'user_id', 
         string=_('Attendances')
     )
-
-    
     
     @api.depends('user_id')
     def _compute_partner_id(self):
@@ -85,8 +83,6 @@ class HrFingerprintUser(models.Model):
             partner = self.env['res.partner'].sudo().search([('fingerprint_user_number', '=',record.user_id)], limit=1)
             record.partner_id = partner.id if partner else False   
 
-    
-    
     # @api.constrains('partner_id', 'device_id', 'user_id')
     # def _check_partner_and_device_uniqueness(self):
     #     for record in self:
@@ -166,7 +162,14 @@ class HrFingerprintUser(models.Model):
                         )
                     # إذا لم يكن لديه fingerprint_user_number، حدثه
                     if not partner.fingerprint_user_number and vals.get('user_id'):
-                        partner.fingerprint_user_number = vals.get('user_id')            
+                        partner.fingerprint_user_number = vals.get('user_id')
+                    # ربط جميع المستخدمين الذين لديهم نفس user_id بجهة الاتصال المختارة
+                    if vals.get('user_id'):
+                        same_user_id_users = self.env['hr.fingerprint.user'].sudo().search([
+                            ('user_id', '=', vals.get('user_id'))
+                        ])
+                        for u in same_user_id_users:
+                            u.partner_id = partner.id
             # إذا لم يكن الطلب من الواجهة الأمامية، فقط احفظ في القاعدة
             if not self.env.context.get('from_frontend'):
                 record = super(HrFingerprintUser, self).create([vals])
@@ -213,32 +216,51 @@ class HrFingerprintUser(models.Model):
                     )
                     # Check if the partner already has a fingerprint_user_number
                     # and it is different from the current user_id
-                    if (
-                        partner.fingerprint_user_number
-                        and partner.fingerprint_user_number != user.user_id
-                    ):
-                        raise UserError(
-                            _(
-                                "This partner is already linked to another fingerprint user number (%s). "
+                    if partner.fingerprint_user_number and partner.fingerprint_user_number != user.user_id:
+                        raise UserError(_("This partner is already linked to another fingerprint user number (%s). "
                                 "It cannot be linked to a different number."
                             )
                             % partner.fingerprint_user_number
                         )
+                    user_id_users = self.env['hr.fingerprint.user'].sudo().search(
+                        [('user_id', '=', user.user_id),('id', '!=', user.id),('partner_id', '!=', False)]
+                    )
+                    if user_id_users:
+                        # إذا كان هناك مستخدمين آخرين بنفس user_id مرتبطين بجهة اتصال مختلفة، ارفع خطأ
+                        # هذا يمنع ربط نفس user_id بجهات اتصال مختلفة
+                        for u in user_id_users:
+                            if u.partner_id.id != partner.id:
+                                raise UserError(_("This user ID is already linked to another partner (%s). "
+                                        "It cannot be linked to a different partner."
+                                    )
+                                    % u.partner_id.name
+                                )
                     try:
-                        old_fingerprint_user_number = (
-                            partner.fingerprint_user_number
-                        )
                         partner.fingerprint_user_number = user.user_id
                     except Exception as e:
-                        partner.fingerprint_user_number = (
-                            old_fingerprint_user_number
-                        )
+                        partner.fingerprint_user_number = old_fingerprint_user_number
                         raise UserError(
-                            _("An error occurred while updating the fingerprint user number "
+                            _(
+                                "An error occurred while updating the fingerprint user number "
                                 "for the partner: %s"
                             )
                             % str(e)
                         )
+            
+            elif vals.get('partner_id') == False:
+                # إذا تم إفراغ جهة الاتصال، أفرغ رقم المستخدم في جهة الاتصال إذا لم يوجد مستخدمين آخرين بنفس الرقم
+                other_users = self.env['hr.fingerprint.user'].sudo().search([
+                    ('partner_id', '=', user.partner_id.id),
+                    ('id', '!=', user.id),
+                    ('user_id', '=', user.user_id)
+                ], limit=1)
+                if not other_users:
+                    partner = self.env["res.partner"].sudo().search([('id', '=', user.partner_id.id)], limit=1)
+                    self.env.cr.execute(
+                        "UPDATE res_partner SET fingerprint_user_number = NULL WHERE id = %s",
+                        (partner.id,)
+                    )
+                    
             # إذا لم يكن الطلب من الواجهة الأمامية، فقط عدل في القاعدة
             if not self.env.context.get('from_frontend'):
                 return super(HrFingerprintUser, user).write(vals)

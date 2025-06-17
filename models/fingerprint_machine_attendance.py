@@ -14,13 +14,15 @@ class FingerprintMachineAttendance(models.Model):
         readonly=True,
         required=True
     )
-    # partner_id = fields.Many2one(
-    #     'res.partner', 
-    #     string="Partner", 
-    # )
     user_id = fields.Many2one(
         'hr.fingerprint.user',
         string=_('User')
+    )
+    partner_id = fields.Many2one(
+        related='user_id.partner_id',
+        string="Partner",
+        store=True,
+        readonly=True
     )
     is_used = fields.Boolean(string=_('Is Used'), default=False)
     punch_type = fields.Selection([
