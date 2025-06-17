@@ -153,6 +153,20 @@ class HrFingerprintUser(models.Model):
     def create(self, vals_list):
         result_records = self.env['hr.fingerprint.user']
         for vals in vals_list:
+            # Add user id from partner
+            # تحقق من partner_id إذا تم تمريره في vals
+            partner_id = vals.get('partner_id')
+            if partner_id:
+                partner = self.env['res.partner'].sudo().browse(partner_id)
+                if partner.exists():
+                    # تحقق إذا كان partner لديه fingerprint_user_number مختلف
+                    if partner.fingerprint_user_number and partner.fingerprint_user_number != vals.get('user_id'):
+                        raise UserError(
+                            _("This contact is already linked to a different fingerprint user number (%s).") % partner.fingerprint_user_number
+                        )
+                    # إذا لم يكن لديه fingerprint_user_number، حدثه
+                    if not partner.fingerprint_user_number and vals.get('user_id'):
+                        partner.fingerprint_user_number = vals.get('user_id')            
             # إذا لم يكن الطلب من الواجهة الأمامية، فقط احفظ في القاعدة
             if not self.env.context.get('from_frontend'):
                 record = super(HrFingerprintUser, self).create([vals])
@@ -163,7 +177,7 @@ class HrFingerprintUser(models.Model):
             if mode == 'direct':
                 device = self.env['hr.fingerprint.device'].browse(vals['device_id'])
                 if not self._sync_user_in_device(device, user=None, vals=vals):
-                    raise UserError(_("فشل إضافة المستخدم للجهاز. لم يتم حفظ المستخدم لأن الجهاز غير متوفر."))
+                    raise UserError(_("Failed to add the user to the device. The user was not saved because the device is not available."))
                 record = super(HrFingerprintUser, self).create([vals])
                 result_records += record
             elif mode == 'push':
@@ -185,10 +199,44 @@ class HrFingerprintUser(models.Model):
 
     def write(self, vals):
         for user in self:
+            # إذا كان هناك تغيير في user_id، قم بتحديث partner_id
+            if vals.get('partner_id'):
+                if vals.get('partner_id') is not False:
+                    partner = self.env["res.partner"].sudo().search(
+                        [('id', '=', vals.get('partner_id'))], limit=1
+                    )
+                    # Check if the partner already has a fingerprint_user_number
+                    # and it is different from the current user_id
+                    if (
+                        partner.fingerprint_user_number
+                        and partner.fingerprint_user_number != user.user_id
+                    ):
+                        raise UserError(
+                            _(
+                                "This partner is already linked to another fingerprint user number (%s). "
+                                "It cannot be linked to a different number."
+                            )
+                            % partner.fingerprint_user_number
+                        )
+                    try:
+                        old_fingerprint_user_number = (
+                            partner.fingerprint_user_number
+                        )
+                        partner.fingerprint_user_number = user.user_id
+                    except Exception as e:
+                        partner.fingerprint_user_number = (
+                            old_fingerprint_user_number
+                        )
+                        raise UserError(
+                            _("An error occurred while updating the fingerprint user number "
+                                "for the partner: %s"
+                            )
+                            % str(e)
+                        )
             # إذا لم يكن الطلب من الواجهة الأمامية، فقط عدل في القاعدة
             if not self.env.context.get('from_frontend'):
                 return super(HrFingerprintUser, user).write(vals)
-
+         
             mode = user.connection_device_mode
             if mode == 'direct':
                 if not self._sync_user_in_device(user.device_id, user=user, vals=vals):
