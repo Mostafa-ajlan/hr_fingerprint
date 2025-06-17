@@ -199,6 +199,12 @@ class HrFingerprintUser(models.Model):
 
     def write(self, vals):
         for user in self:
+            # منع تعديل الجهاز أو user_id بعد الإنشاء
+            if 'device_id' in vals and vals['device_id'] != user.device_id.id:
+                raise UserError(_("Device cannot be modified after user creation."))
+            if 'user_id' in vals and vals['user_id'] != user.user_id:
+                raise UserError(_("User ID cannot be modified after creation."))
+
             # إذا كان هناك تغيير في user_id، قم بتحديث partner_id
             if vals.get('partner_id'):
                 if vals.get('partner_id') is not False:
@@ -265,7 +271,7 @@ class HrFingerprintUser(models.Model):
                 other_users = self.env['hr.fingerprint.user'].search([
                     ('partner_id', '=', user.partner_id.id),
                     ('id', '!=', user.id)
-                ], limit=1)
+                ], )
                 if not other_users:
                     user.partner_id.fingerprint_user_number = False
 
@@ -276,7 +282,7 @@ class HRFingerprintUserBiometric(models.Model):
     _name = 'hr.fingerprint.user.biometric'
     _description = _('Biometric Data')
 
-    user_id = fields.Many2one('hr.fingerprint.user', 'User', required=True, ondelete='cascade')
+    user_id = fields.Many2one('hr.fingerprint.user', 'User', required=True)
     index = fields.Integer(string=_('Index'))
     valid = fields.Boolean(string=_('Valid'))
     duress = fields.Boolean(string=_('Duress'))
