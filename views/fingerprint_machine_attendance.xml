@@ -8,6 +8,7 @@
             <list create="false" edit="false">
                 <field name="device_id" />
                 <field name="user_id" />
+                <field name="partner_id" widget="many2one_avatar_user"/>
                 <field name="attendance_type" />
                 <field name="punching_time" />
                 <field name="punch_type" />
