@@ -253,30 +253,30 @@ class HrFingerprintUser(models.Model):
             else:
                 return super(HrFingerprintUser, user).write(vals)
             
-    # def unlink(self):
-    #     for user in self:
-    #         # فك ارتباط سجلات الحضور بالمستخدم بدلاً من حذفها
-    #         attendance_records = self.env['fingerprint.attendance'].search([('user_id', '=', user.id)])
-    #         if attendance_records:
-    #             attendance_records.write({'user_id': False})
-            
-    #         # إذا كان المستخدم مرتبطًا بشريك، قم بإزالة fingerprint_user_number من الشريك
-    #         if user.partner_id:
-    #             user.partner_id.fingerprint_user_number = False
+    def unlink(self):
+        for user in self:
+            # Unlink attendance records
+            attendance_records = self.env['fingerprint.attendance'].search([('user_id', '=', user.id)])
+            if attendance_records:
+                attendance_records.write({'user_id': False})
 
-    #         # يمكنك هنا إضافة منطق لحذف المستخدم من الجهاز إذا كان الاتصال مباشرًا
-    #         # if user.connection_device_mode == 'direct':
-    #         #    self._delete_user_from_device(user.device_id, user)
+            # If the user is linked to a partner, and this partner is not linked to any other users, clear the fingerprint_user_number
+            if user.partner_id:
+                other_users = self.env['hr.fingerprint.user'].search([
+                    ('partner_id', '=', user.partner_id.id),
+                    ('id', '!=', user.id)
+                ], limit=1)
+                if not other_users:
+                    user.partner_id.fingerprint_user_number = False
 
-    #     return super(HrFingerprintUser, self).unlink()        
-
+        return super(HrFingerprintUser, self).unlink()
                 
 # Model to hold biometric data for users 
 class HRFingerprintUserBiometric(models.Model):
     _name = 'hr.fingerprint.user.biometric'
     _description = _('Biometric Data')
 
-    user_id = fields.Many2one('hr.fingerprint.user', 'User', required=True)
+    user_id = fields.Many2one('hr.fingerprint.user', 'User', required=True, ondelete='cascade')
     index = fields.Integer(string=_('Index'))
     valid = fields.Boolean(string=_('Valid'))
     duress = fields.Boolean(string=_('Duress'))
