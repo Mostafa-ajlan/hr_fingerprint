@@ -4,4 +4,5 @@
     <menuitem id="menu_hr_fingerprint_main" name="Device" sequence="10" parent="menu_fingerprint_root"/>
     <menuitem id="hr_fingerprint_user_menu" name="Users" sequence="20" parent="menu_fingerprint_root"/>
     <menuitem id="menu_fingerprint_machine_attendance_main" sequence="30" name="Attendance" parent="menu_fingerprint_root"/>
+    <menuitem id="menu_fingerprint_device_command" sequence="35" name="commands" parent="menu_fingerprint_root"/>
 </odoo>

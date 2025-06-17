@@ -37,10 +37,10 @@ class ZKDeviceCommand(models.Model):
 
     # Shared fields
     device_id = fields.Many2one('hr.fingerprint.device', 'Device', required=True)
-    cmd_id = fields.Char(string="CmdId")
+    cmd_id = fields.Char(string="CmdId", readonly=True, default='New')
     user_ids = fields.Many2one('hr.fingerprint.user',string="User IDs", help="User ID in the fingerprint device")
     user_id = fields.Char(related='user_ids.user_id',string="User ID",)
-    name_value = fields.Char(string="Name")
+    name_value = fields.Char(string="User Name")
     passwd = fields.Char(string="Password")
     card = fields.Char(string="Card")
     group = fields.Char(string="Group")
@@ -146,3 +146,11 @@ class ZKDeviceCommand(models.Model):
                 rec.generated_command = f'C:{c}:SHELL {rec.shell_cmd}'
             else:
                 rec.generated_command = 'Unknown command'
+
+    # other fields...
+
+    @api.model
+    def create(self, vals):
+        if vals.get('cmd_id', 'New') == 'New':
+            vals['cmd_id'] = self.env['ir.sequence'].next_by_code('zk.device.command') or 'New'
+        return super(ZKDeviceCommand, self).create(vals)

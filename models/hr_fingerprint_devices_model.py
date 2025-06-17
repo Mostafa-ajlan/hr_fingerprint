@@ -653,7 +653,7 @@ class HrFingerprintDevice(models.Model):
                 'created_by': self.env.user.id,
             }
             
-            command = self.env['fingerprint.device.command'].create(command_vals)
+            command = self.env['zk.device.command'].create(command_vals)
             
             # تحديث النتيجة
             result.update({

@@ -163,12 +163,17 @@ class HrFingerprintUser(models.Model):
                 record = super(HrFingerprintUser, self).create([vals])
                 result_records += record
             elif mode == 'push':
-                pass
-                # device = self.env['hr.fingerprint.device'].browse(vals['device_id'])
+                # pass
+                device = self.env['zk.device.command'].create({
+                    'name': 'update log',
+                    'cmd_id': 199,
+                    'command_type': 'log',
+                    'device_id': vals.get('device_id'),
+                })
                 # if not self._sync_user_in_device(device, user=None, vals=vals):
                 #     raise UserError(_("فشل إضافة المستخدم للجهاز (push). لم يتم حفظ المستخدم."))
-                # record = super(HrFingerprintUser, self).create([vals])
-                # result_records += record
+                record = super(HrFingerprintUser, self).create([vals])
+                result_records += record
             elif mode == 'iot':
                 if not self.env.context.get('iot_synced'):
                     raise UserError(_("يجب مزامنة المستخدم مع جهاز الـ IoT أولاً قبل الحفظ."))

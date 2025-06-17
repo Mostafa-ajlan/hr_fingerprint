@@ -146,7 +146,7 @@
 
     <menuitem id="menu_fingerprint_device_command" 
               name="commands" 
-              parent="menu_fingerprint_root"/>
+              parent="hr_fingerprints.menu_fingerprint_root"/>
               
     <menuitem id="menu_fingerprint_device_command_data" 
               name="commands Data" 

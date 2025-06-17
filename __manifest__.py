@@ -19,6 +19,7 @@
     'version': '0.1',
 
     'data': [
+        'data/sequence_command.xml',
         'security/ir.model.access.csv',
         'views/main_menu.xml',
         'wizard/add_fingerprint_device_views.xml',
