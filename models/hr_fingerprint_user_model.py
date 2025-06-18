@@ -104,7 +104,27 @@ class HrFingerprintUser(models.Model):
     #             if not record.partner_id.fingerprint_user_number and record.user_id:
     #                 record.partner_id.fingerprint_user_number = record.user_id
 
-   
+    
+    def _delete_user_from_device(self, device, user):
+        zk_device, conn = device.connect_to_zk_device()
+        print(zk_device,"zk_devicezk_devicezk_device")
+        if not zk_device or not conn:
+            return False
+        try:
+            uid = int(user.uid) if user.uid else 0
+           
+            conn.delete_user(uid=uid, user_id=user.user_id) # استخدام user_id لحذف المستخدم من الجهاز
+            conn.disconnect()
+            print("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
+            return True
+        except Exception as e:
+            print(e,"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+            return False
+        finally:
+            if conn:
+                conn.disconnect()
+
+
     def _sync_user_in_device(self, device, user=None, vals=None):
         '''
         تضيف أو تحدث مستخدم في جهاز البصمة.
@@ -118,14 +138,17 @@ class HrFingerprintUser(models.Model):
                 return False
             try:
                 # تجهيز البيانات
-                user_id = vals.get('user_id') if vals else user.user_id
-                name = vals.get('name', user.name if user else '') if vals else user.name
-                privilege = int(vals.get('privilege', user.privilege if user else '0')) if vals else int(user.privilege if user else '0')
-                password = vals.get('password', user.password if user else '') if vals else user.password if user else ''
-                card = vals.get('card', user.card if user else '0') if vals else user.card if user else '0'
-                group_id = vals.get('group_id', user.group_id if user else '') if vals else user.group_id if user else ''
-                # إضافة أو تحديث المستخدم
+                uid_to_send = int(user.uid) if user and user.uid else None
+                user_id = vals.get('user_id') if vals and 'user_id' in vals else (user.user_id if user else '')
+                name = vals.get('name') if vals and 'name' in vals else (user.name if user else '')
+                password = vals.get('password') if vals and 'password' in vals else (user.password if user else '')
+                group_id = vals.get('group_id') if vals and 'group_id' in vals else (user.group_id if user else '')
+                _privilege_from_vals = vals.get('privilege') if vals and 'privilege' in vals else None
+                privilege = int(_privilege_from_vals) if _privilege_from_vals is not None else (int(user.privilege) if user and user.privilege is not None else 0)
+                _card_from_vals = vals.get('card') if vals and 'card' in vals else None
+                card = int(_card_from_vals) if _card_from_vals is not None else (int(user.card) if user and user.card is not None else 0)               
                 conn.set_user(
+                    uid=uid_to_send,
                     name=name,
                     privilege=privilege,
                     password=password if password else '',
@@ -180,7 +203,11 @@ class HrFingerprintUser(models.Model):
             if mode == 'direct':
                 device = self.env['hr.fingerprint.device'].browse(vals['device_id'])
                 if not self._sync_user_in_device(device, user=None, vals=vals):
-                    raise UserError(_("Failed to add the user to the device. The user was not saved because the device is not available."))
+                    raise UserError(_("فشل إضافة المستخدم للجهاز. لم يتم حفظ المستخدم لأن الجهاز غير متوفر."))
+                user_in_device = device._fetch_user_by_user_id(vals.get('user_id',''))
+                if not user_in_device:
+                    raise UserError(_("فشل إضافة المستخدم للجهاز. لم يتم حفظ المستخدم لأن الجهاز غير متوفر."))
+                vals['uid'] = user_in_device.get('uid', False)
                 record = super(HrFingerprintUser, self).create([vals])
                 result_records += record
             elif mode == 'push':
@@ -238,6 +265,7 @@ class HrFingerprintUser(models.Model):
                     try:
                         partner.fingerprint_user_number = user.user_id
                     except Exception as e:
+                        old_fingerprint_user_number = None
                         partner.fingerprint_user_number = old_fingerprint_user_number
                         raise UserError(
                             _(
@@ -268,7 +296,7 @@ class HrFingerprintUser(models.Model):
             mode = user.connection_device_mode
             if mode == 'direct':
                 if not self._sync_user_in_device(user.device_id, user=user, vals=vals):
-                    raise UserError(_("فشل تحديث المستخدم في جهاز البصمة. لم يتم حفظ التعديلات."))
+                    raise UserError(_("فشل تحديث المستخدم في جهاز البصمة. لم يتم حفظ التعديلات."))                
                 return super(HrFingerprintUser, user).write(vals)
             elif mode == 'push':
                 # if not self._sync_user_in_device(user.device_id, user=user, vals=vals):
@@ -281,6 +309,50 @@ class HrFingerprintUser(models.Model):
             else:
                 return super(HrFingerprintUser, user).write(vals)
             
+    # def unlink(self):
+    #     if not self.env.context.get('from_frontend'):
+    #         for user in self:
+    #             attendance_records = self.env['fingerprint.attendance'].search([('user_id', '=', user.id)])
+    #             if attendance_records:
+    #                 attendance_records.write({'user_id': False})
+    #             if user.partner_id:
+    #                 user.partner_id.fingerprint_user_number = False
+    #         return super(HrFingerprintUser, self).unlink()
+
+    #     records_to_unlink_from_frontend = self.env['hr.fingerprint.user']
+
+    #     for user in self:
+    #         mode = user.connection_device_mode
+    #         if mode == 'direct':
+    #             print(user.device_id.name,"AAAAQQQQQQQQQQWWWWWWWWWWWWW")
+    #             # محاولة حذف المستخدم من الجهاز المباشر
+    #             if not self._delete_user_from_device(user.device_id, user):
+    #                 raise UserError(_("فشل حذف المستخدم من الجهاز. لم يتم حذف المستخدم."))
+    #             records_to_unlink_from_frontend += user
+    #         elif mode == 'push':
+    #             # لوضع push، لا يوجد تفاعل مباشر مع الجهاز للحذف من الواجهة الخلفية
+    #             records_to_unlink_from_frontend += user
+    #         elif mode == 'iot':
+    #             # لوضع IoT، تحقق مما إذا تم التزامن من الواجهة الأمامية
+    #             if not self.env.context.get('iot_synced'):
+    #                 raise UserError(_("يجب مزامنة حذف المستخدم مع جهاز الـ IoT أولاً قبل الحذف."))
+    #             records_to_unlink_from_frontend += user
+    #         else:
+    #             # الحالة الافتراضية لأوضاع الاتصال الأخرى
+    #             records_to_unlink_from_frontend += user
+
+    #     # طبق منطق unlink الأصلي (فصل الحضور، الشريك) للسجلات التي تمت معالجتها بنجاح
+    #     for user in records_to_unlink_from_frontend:
+    #         attendance_records = self.env['fingerprint.attendance'].search([('user_id', '=', user.id)])
+    #         if attendance_records:
+    #             attendance_records.write({'user_id': False})
+    #         if user.partner_id:
+    #             user.partner_id.fingerprint_user_number = False
+            
+        
+
+        # return super(HrFingerprintUser, self).unlink()
+
     def unlink(self):
         for user in self:
             # Unlink attendance records
@@ -296,8 +368,7 @@ class HrFingerprintUser(models.Model):
                 ], )
                 if not other_users:
                     user.partner_id.fingerprint_user_number = False
-
-        return super(HrFingerprintUser, self).unlink()
+        return super(HrFingerprintUser, self).unlink()    
                 
 # Model to hold biometric data for users 
 class HRFingerprintUserBiometric(models.Model):

@@ -381,6 +381,35 @@ class HrFingerprintDevice(models.Model):
             _logger.error("Error fetching device info: %s", str(e))
             return False 
 
+    def _fetch_user_by_user_id(self, user_id):
+        """
+        Fetches a specific user's data from the device using their user_id.
+        :param user_id: The user_id to search for.
+        :return: A dictionary of user data if found, False otherwise.
+        """
+        zk_device, conn = self.connect_to_zk_device()
+        if not zk_device or not conn:
+            return False
+        try:
+            users = zk_device.get_users() # Get all users
+            for user in users:
+                if user.user_id == user_id:
+                    return {
+                        'device_id': self.id,
+                        'user_id': user.user_id,
+                        'uid': str(user.uid),
+                        'name': user.name,
+                        'privilege': str(user.privilege),
+                        'password': user.password,
+                        'group_id': user.group_id,
+                        'card': str(user.card),
+                    }
+            _logger.warning("User with user_id %s not found on device %s", user_id, self.name)
+            return False
+        except Exception as e:
+            _logger.error("Error fetching user by user_id %s from device %s: %s", user_id, self.name, str(e))
+            return False
+    
     def _fetch_users(self, zk_device):
         try:
             users = zk_device.get_users()
@@ -773,7 +802,6 @@ class HrFingerprintDevice(models.Model):
             result['message'] = _("Failed to get device info: %s") % str(e)
         return result
         
-
     def write(self, vals):
         result = super(HrFingerprintDevice, self).write(vals)
         if 'auto_sync_time' in vals and self.connection_mode == 'direct':
@@ -950,7 +978,7 @@ class HrFingerprintDevice(models.Model):
                 pass
 
    
-   # push protocol functions
+    # push protocol functions
     def process_attendance_data(self, data, stamp):
         """
         processing attendance data from the device

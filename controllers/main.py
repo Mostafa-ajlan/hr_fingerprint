@@ -243,8 +243,27 @@ class FingerprintsController(http.Controller):
                     'device_identifier': device_identifier,
                 })
             elif action == 'create_or_update_user':
+                print("create_or_update_user")
+                fingerprint_device = self._get_fingerprint_device(iot_device.id)
+                uid = data.get('uid','')
+                user_id = data.get('user_id','')
+                user = request.env['hr.fingerprint.user'].sudo().search([('device_id', '=', fingerprint_device.id),('user_id', '=', user_id)], limit=1)
+                if user:
+                    print(user.name, "useruseruseruseruser")
+                    user.write({
+                        'uid':uid
+                    })
+                
+                print(uid, "uiduiduiduiduid")
+
                 request.env['bus.bus']._sendone(iot_channel, 'fingerprint_iot_devices', {
                     'action_type': 'create_or_update_user',
+                    'device_identifier': device_identifier,
+                })
+
+            elif action == 'delete_user':
+                request.env['bus.bus']._sendone(iot_channel, 'fingerprint_iot_devices', {
+                    'action_type': 'delete_user',
                     'device_identifier': device_identifier,
                 })
 
