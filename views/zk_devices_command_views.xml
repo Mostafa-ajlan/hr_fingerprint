@@ -38,11 +38,11 @@
             <field name="user_ids"/>
             <field name="user_id"/>
             <field name="name_value"/>
-            <field name="passwd"/>
+            <field name="password"/>
             <field name="card"/>
-            <field name="group"/>
+            <field name="group_id"/>
             <field name="tz"/>
-            <field name="pri"/>
+            <field name="privilege"/>
           </group>
 
           <!-- User Photo -->
