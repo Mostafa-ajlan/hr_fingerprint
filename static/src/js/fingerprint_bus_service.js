@@ -51,7 +51,8 @@ export const fingerprintIoTNotificationService = {
                 shutdown_device: 'The device %s has been successfully turned off.',
                 reboot_device: 'The device %s has been successfully reboot.',
                 sync_time: 'The device %s has been successfully sync time.',
-                create_or_update_user: 'User created or updated successfully from %s device.',
+                create_or_update_user: 'User/Users created or updated successfully to %s device.',
+                delete_user: 'User/Users deleted successfully from %s device.',
                 live_capture: 'Fingerprint registered from %s device. [Type: %s, Punch: %s]',
             };
 

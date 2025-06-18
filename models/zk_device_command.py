@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import models, fields, api , _
 import logging
 import json
 
@@ -7,33 +7,33 @@ _logger = logging.getLogger(__name__)
 
 class ZKDeviceCommand(models.Model):
     _name = 'zk.device.command'
-    _description = 'zk Device Command'
+    _description = _("zk Device Command")
     _order = 'create_date desc'
-    
-    name = fields.Char(string='Name', required=True)
+
+    name = fields.Char(string=_('Name'), required=True)
     command_type = fields.Selection([
-        ('update_userinfo', 'Update User Info'),
-        ('update_userpic', 'Update User Photo'),
-        ('update_sms', 'Send SMS'),
-        ('delete_userinfo', 'Delete User Info'),
-        ('delete_sms', 'Delete SMS'),
-        ('query_attlog', 'Query Attendance Log'),
-        ('query_userinfo', 'Query User Info'),
-        ('query_userpic', 'Query User picture'),
-        ('clear_log', 'Clear Log'),
-        ('clear_data', 'Clear Data'),
-        ('check', 'Check'),
-        ('log', 'Log'),
-        ('verify_sum', 'Verify Attendance Sum'),
-        ('set_option', 'Set Option'),
-        ('reload_option', 'Reload Option'),
-        ('info', 'Info'),
-        ('enroll_fp', 'Enroll Fingerprint'),
-        ('reboot', 'Reboot'),
-        ('unlock', 'Unlock Door'),
-        ('unalarm', 'Unalarm'),
-        ('shell', 'Shell Command'),
-    ], string='Command Type', required=True)
+        ('update_userinfo', _('Update User Info')),
+        ('update_userpic', _('Update User Photo')),
+        ('update_sms', _('Send SMS')),
+        ('delete_userinfo', _('Delete User Info')),
+        ('delete_sms', _('Delete SMS')),
+        ('query_attlog', _('Query Attendance Log')),
+        ('query_userinfo', _('Query User Info')),
+        ('query_userpic', _('Query User picture')),
+        ('clear_log', _('Clear Log')),
+        ('clear_data', _('Clear Data')),
+        ('check', _('Check')),
+        ('log', _('Log')),
+        ('verify_sum', _('Verify Attendance Sum')),
+        ('set_option', _('Set Option')),
+        ('reload_option', _('Reload Option')),
+        ('info', _('Info')),
+        ('enroll_fp', _('Enroll Fingerprint')),
+        ('reboot', _('Reboot')),
+        ('unlock', _('Unlock Door')),
+        ('unalarm', _('Unalarm')),
+        ('shell', _('Shell Command')),
+    ], string=_('Command Type'), required=True)
 
     # Shared fields
     device_id = fields.Many2one('hr.fingerprint.device', 'Device', required=True)
@@ -54,46 +54,46 @@ class ZKDeviceCommand(models.Model):
         ('14', 'Super Admin')
     ], string="Privilege")
     state = fields.Selection([
-        ('draft', 'مسودة'),
-        ('pending', 'معلق'),
-        ('sent', 'تم الإرسال'),
-        ('done', 'مكتمل'),
-        ('failed', 'فشل')
-    ], string='الحالة', default='draft')
+        ('draft', _("Draft")),
+        ('pending', _("Pending")),
+        ('sent', _("Sent")),
+        ('done', _("Done")),
+        ('failed', _("Failed"))
+    ], string=_("State"), default='draft')
     # Photo command
-    photo_size = fields.Char(string="Photo Size (Base64 length)")
-    photo_content = fields.Text(string="Photo Content (Base64)")
+    photo_size = fields.Char(string=_("Photo Size (Base64 length)"))
+    photo_content = fields.Text(string=_("Photo Content (Base64)"))
 
     # SMS command
-    sms_message = fields.Char(string="SMS Message")
+    sms_message = fields.Char(string=_("SMS Message"))
     sms_tag = fields.Selection([
-        ('253', 'Public'),
-        ('254', 'User'),
-        ('255', 'Reserved')
-    ], string="SMS Tag")
-    sms_uid = fields.Char(string="Message Number")
-    sms_min = fields.Char(string="Duration (Min)")
-    sms_start_time = fields.Datetime(string="Start Time")
+        ('253', _('Public')),
+        ('254', _('User')),
+        ('255', _('Reserved'))
+    ], string=_("SMS Tag"))
+    sms_uid = fields.Char(string=_("Message Number"))
+    sms_min = fields.Char(string=_("Duration (Min)"))
+    sms_start_time = fields.Datetime(string=_("Start Time"))
 
     # QUERY/VERIFY
-    start_time = fields.Datetime(string="Start Time")
-    end_time = fields.Datetime(string="End Time")
+    start_time = fields.Datetime(string=_("Start Time"))
+    end_time = fields.Datetime(string=_("End Time"))
 
     # Option
-    option_key = fields.Char(string="Option Key")
-    option_value = fields.Char(string="Option Value")
+    option_key = fields.Char(string=_("Option Key"))
+    option_value = fields.Char(string=_("Option Value"))
 
     # Enroll FP
-    fp_id = fields.Char(string="Fingerprint ID")
-    retry = fields.Integer(string="Retry Count")
-    overwrite = fields.Selection([('0', 'No'), ('1', 'Yes')], string="Overwrite?")
+    fp_id = fields.Char(string=_("Fingerprint ID"))
+    retry = fields.Integer(string=_("Retry Count"))
+    overwrite = fields.Selection([('0', _('No')), ('1', _('Yes'))], string=_("Overwrite?"))
 
     # Shell
-    shell_cmd = fields.Char(string="Shell Command")
+    shell_cmd = fields.Char(string=_("Shell Command"))
 
     # Final command output
-    generated_command = fields.Text(string="Generated Command", compute="_compute_generated_command", store=True)
-    execution_date = fields.Datetime(string='Execution Date')
+    generated_command = fields.Text(string=_("Generated Command"), compute="_compute_generated_command", store=True)
+    execution_date = fields.Datetime(string=_("Execution Date"))
     @api.depends(
         'command_type', 'cmd_id', 'user_id', 'name_value', 'password', 'card', 'group_id', 'tz', 'privilege',
         'photo_size', 'photo_content', 'sms_message', 'sms_tag', 'sms_uid', 'sms_min', 'sms_start_time',

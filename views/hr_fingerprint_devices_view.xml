@@ -146,7 +146,8 @@
                         <page name="device_users" string="Device Users">
                             <field name="user_ids" widget="one2many" readonly="1">
                                 <list>
-                                    <field name="partner_id" />
+                                    <field name="name"/>
+                                    <field name="partner_id" widget="many2one_avatar_user"/>
                                     <field name="user_id" />
                                     <field name="group_id" />
                                     <field name="active_user" />

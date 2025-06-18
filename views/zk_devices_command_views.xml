@@ -14,7 +14,6 @@
                 <field name="shell_cmd"/>
                 <field name="execution_date"/>
                 <field name="state"/>
-                
             </list>
         </field>
     </record>
@@ -27,10 +26,14 @@
             <form string="ZKTeco commands">
         <sheet>
           <group>
-            <field name="name"/>
-            <field name="cmd_id"/>
-            <field name="device_id"/>
-            <field name="command_type"/>
+            <group>
+              <field name="name"/>
+              <field name="device_id"/>
+            </group>
+            <group>
+              <field name="cmd_id"/>
+              <field name="command_type"/>
+            </group>
           </group>
 
           <!-- Update User Info -->
@@ -46,21 +49,29 @@
           </group>
 
           <!-- User Photo -->
-          <group string="User Photo" invisible="command_type != 'update_userpic'">
-            <field name="user_ids"/>
-            <field name="user_id"/>
-            <field name="photo_size"/>
-            <field name="photo_content"/>
-          </group>
+            <group string="User Photo" invisible="command_type != 'update_userpic'">
+              <group>
+                <field name="user_ids"/>
+                <field name="user_id"/>
+              </group>
+              <group>
+                <field name="photo_size"/>
+                <field name="photo_content"/>
+              </group>
+            </group>
 
           <!-- SMS -->
-          <group string="Send SMS" invisible="command_type != 'update_sms'">
-            <field name="sms_message"/>
-            <field name="sms_tag"/>
-            <field name="sms_uid"/>
-            <field name="sms_min"/>
-            <field name="sms_start_time"/>
-          </group>
+            <group string="Send SMS" invisible="command_type != 'update_sms'">
+              <group>
+                <field name="sms_message"/>
+                <field name="sms_uid"/>
+                <field name="sms_start_time"/>
+              </group>
+              <group>
+                <field name="sms_tag"/>
+                <field name="sms_min"/>
+              </group>
+            </group>
 
           <!-- Delete -->
           <group string="Delete User" invisible="command_type != 'delete_userinfo'">
@@ -95,11 +106,15 @@
 
           <!-- Enroll Fingerprint -->
           <group string="Enroll FP"  invisible="command_type != 'enroll_fp'">
-            <field name="user_ids"/>
-            <field name="user_id"/>
-            <field name="fp_id"/>
-            <field name="retry"/>
-            <field name="overwrite"/>
+            <group>
+              <field name="user_ids"/>
+              <field name="fp_id"/>
+              <field name="overwrite"/>
+            </group>
+            <group>
+              <field name="user_id"/>
+              <field name="retry"/>
+            </group>
           </group>
 
           <!-- Shell Command -->
@@ -143,11 +158,7 @@
             </p>
         </field>
     </record>
-
-    <menuitem id="menu_fingerprint_device_command" 
-              name="commands" 
-              parent="hr_fingerprints.menu_fingerprint_root"/>
-              
+             
     <menuitem id="menu_fingerprint_device_command_data" 
               name="commands Data" 
               parent="menu_fingerprint_device_command"
