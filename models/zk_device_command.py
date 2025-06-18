@@ -36,22 +36,23 @@ class ZKDeviceCommand(models.Model):
     ], string=_('Command Type'), required=True)
 
     # Shared fields
-    device_id = fields.Many2one('hr.fingerprint.device', string=_('Device'), required=True)
-    cmd_id = fields.Char(string=_("CmdId"))
-    user_ids = fields.Many2one('hr.fingerprint.user', string=_("User IDs"), help=_("User ID in the fingerprint device"))
-    user_id = fields.Char(related='user_ids.user_id', string=_("User ID"))
-    name_value = fields.Char(string=_("Name"))
-    passwd = fields.Char(string=_("Password"))
-    card = fields.Char(string=_("Card"))
-    group = fields.Char(string=_("Group"))
-    tz = fields.Char(string=_("Time Period"))
-    pri = fields.Selection([
-        ('0', _('Normal User')),
-        ('2', _('Registrar')),
-        ('6', _('Admin')),
-        ('10', _('User-defined')),
-        ('14', _('Super Admin'))
-    ], string=_("Privilege"))
+    device_id = fields.Many2one('hr.fingerprint.device', 'Device', required=True)
+    cmd_id = fields.Char(string="CmdId", readonly=True, default='New')
+    user_ids = fields.Many2one('hr.fingerprint.user',string="User IDs", help="User ID in the fingerprint device")
+    user_id = fields.Char(related='user_ids.user_id',string="User ID",)
+    name_value = fields.Char(string="User Name")
+    password = fields.Char(string="Password")
+    card = fields.Char(string="Card")
+    group_id = fields.Char(string="Group")
+    tz = fields.Char(string="Time Period")
+    active_user = fields.Boolean(default=True)
+    privilege = fields.Selection([
+        ('0', 'Normal User'),
+        ('2', 'Registrar'),
+        ('6', 'Admin'),
+        ('10', 'User-defined'),
+        ('14', 'Super Admin')
+    ], string="Privilege")
     state = fields.Selection([
         ('draft', _("Draft")),
         ('pending', _("Pending")),
@@ -94,7 +95,7 @@ class ZKDeviceCommand(models.Model):
     generated_command = fields.Text(string=_("Generated Command"), compute="_compute_generated_command", store=True)
     execution_date = fields.Datetime(string=_("Execution Date"))
     @api.depends(
-        'command_type', 'cmd_id', 'user_id', 'name_value', 'passwd', 'card', 'group', 'tz', 'pri',
+        'command_type', 'cmd_id', 'user_id', 'name_value', 'password', 'card', 'group_id', 'tz', 'privilege',
         'photo_size', 'photo_content', 'sms_message', 'sms_tag', 'sms_uid', 'sms_min', 'sms_start_time',
         'start_time', 'end_time', 'option_key', 'option_value', 'fp_id', 'retry', 'overwrite', 'shell_cmd'
     )
@@ -103,21 +104,35 @@ class ZKDeviceCommand(models.Model):
             c = rec.cmd_id or '1'
             u = rec.user_id or ''
             if rec.command_type == 'update_userinfo':
-                rec.generated_command = f'C:{c}:DATA UPDATE USERINFO PIN={u} Name={rec.name_value} Passwd={rec.passwd} Card={rec.card} Grp={rec.group} TZ={rec.tz} Pri={rec.pri}'
+                rec.generated_command = (
+                    f'C:{c}:DATA UPDATE USERINFO\t'
+                    f'PIN={u}\tName={rec.name_value}\tPasswd={rec.password}\t'
+                    f'Card={rec.card}\tGrp={rec.group_id}\tTZ={rec.tz}\tPri={rec.privilege}'
+                )
             elif rec.command_type == 'update_userpic':
-                rec.generated_command = f'C:{c}:DATA UPDATE USERPIC PIN={u} Size={rec.photo_size} Content={rec.photo_content}'
+                rec.generated_command = (
+                    f'C:{c}:DATA UPDATE USERPIC\t'
+                    f'PIN={u}\tSize={rec.photo_size}\tContent={rec.photo_content}'
+                )
             elif rec.command_type == 'update_sms':
-                rec.generated_command = f'C:{c}:DATA UPDATE SMS MSG={rec.sms_message} TAG={rec.sms_tag} UID={rec.sms_uid} MIN={rec.sms_min} StartTime={rec.sms_start_time}'
+                rec.generated_command = (
+                    f'C:{c}:DATA UPDATE SMS\t'
+                    f'MSG={rec.sms_message}\tTAG={rec.sms_tag}\tUID={rec.sms_uid}\t'
+                    f'MIN={rec.sms_min}\tStartTime={rec.sms_start_time}'
+                )
             elif rec.command_type == 'delete_userinfo':
-                rec.generated_command = f'C:{c}:DATA DELETE USERINFO PIN={u}'
+                rec.generated_command = f'C:{c}:DATA DELETE USERINFO\tPIN={u}'
             elif rec.command_type == 'delete_sms':
-                rec.generated_command = f'C:{c}:DATA DELETE SMS UID={rec.sms_uid}'
+                rec.generated_command = f'C:{c}:DATA DELETE SMS\tUID={rec.sms_uid}'
             elif rec.command_type == 'query_attlog':
-                rec.generated_command = f'C:{c}:DATA QUERY ATTLOG StartTime={rec.start_time} EndTime={rec.end_time}'
+                rec.generated_command = (
+                    f'C:{c}:DATA QUERY ATTLOG\t'
+                    f'StartTime={rec.start_time}\tEndTime={rec.end_time}'
+                )
             elif rec.command_type == 'query_userinfo':
-                rec.generated_command = f'C:{c}:DATA QUERY USERINFO PIN={u}'
+                rec.generated_command = f'C:{c}:DATA QUERY USERINFO\tPIN={u}'
             elif rec.command_type == 'query_userpic':
-                rec.generated_command = f'C:{c}:DATA QUERY USERPIC PIN={u}'
+                rec.generated_command = f'C:{c}:DATA QUERY USERPIC\tPIN={u}'
             elif rec.command_type == 'clear_log':
                 rec.generated_command = f'C:{c}:CLEAR LOG'
             elif rec.command_type == 'clear_data':
@@ -127,7 +142,10 @@ class ZKDeviceCommand(models.Model):
             elif rec.command_type == 'log':
                 rec.generated_command = f'C:{c}:LOG'
             elif rec.command_type == 'verify_sum':
-                rec.generated_command = f'C:{c}:VERIFY SUM ATTLOG StartTime={rec.start_time} EndTime={rec.end_time}'
+                rec.generated_command = (
+                    f'C:{c}:VERIFY SUM ATTLOG\t'
+                    f'StartTime={rec.start_time}\tEndTime={rec.end_time}'
+                )
             elif rec.command_type == 'set_option':
                 rec.generated_command = f'C:{c}:SET OPTION {rec.option_key}={rec.option_value}'
             elif rec.command_type == 'reload_option':
@@ -135,7 +153,9 @@ class ZKDeviceCommand(models.Model):
             elif rec.command_type == 'info':
                 rec.generated_command = f'C:{c}:INFO'
             elif rec.command_type == 'enroll_fp':
-                rec.generated_command = f'C:{c}:ENROLL_FP PIN={u} FID={rec.fp_id} RETRY={rec.retry} OVERWRITE={rec.overwrite}'
+                rec.generated_command = (
+                    f'C:{c}:ENROLL_FP\tPIN={u}\tFID={rec.fp_id}\tRETRY={rec.retry}\tOVERWRITE={rec.overwrite}'
+                )
             elif rec.command_type == 'reboot':
                 rec.generated_command = f'C:{c}:REBOOT'
             elif rec.command_type == 'unlock':
@@ -146,3 +166,11 @@ class ZKDeviceCommand(models.Model):
                 rec.generated_command = f'C:{c}:SHELL {rec.shell_cmd}'
             else:
                 rec.generated_command = 'Unknown command'
+
+    # other fields...
+
+    @api.model
+    def create(self, vals):
+        if vals.get('cmd_id', 'New') == 'New':
+            vals['cmd_id'] = self.env['ir.sequence'].next_by_code('zk.device.command') or 'New'
+        return super(ZKDeviceCommand, self).create(vals)

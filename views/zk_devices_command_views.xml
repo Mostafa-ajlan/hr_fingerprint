@@ -38,18 +38,14 @@
 
           <!-- Update User Info -->
           <group string="User Info" invisible="command_type != 'update_userinfo'">
-            <group>
-              <field name="user_ids"/>
-              <field name="name_value"/>
-              <field name="card"/>
-              <field name="tz"/>
-            </group>
-            <group>
-              <field name="user_id"/>
-              <field name="passwd"/>
-              <field name="group"/>
-              <field name="pri"/>
-            </group>
+            <field name="user_ids"/>
+            <field name="user_id"/>
+            <field name="name_value"/>
+            <field name="password"/>
+            <field name="card"/>
+            <field name="group_id"/>
+            <field name="tz"/>
+            <field name="privilege"/>
           </group>
 
           <!-- User Photo -->
