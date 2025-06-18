@@ -24,15 +24,12 @@ class IotFingerprintMachine(models.Model):
     def get_iot_box_data(self, device_id, display_name = None):
         """
         """
-        print("uutyutuytuyrtchgvcjh")
         device = self.browse(device_id[0])
         if device and device.type == 'biometric':
             create = False
-            print(device.connected,"LKJLKJLKJLKJLKJLKJJKL")
             if not device.connected:
                 fingerprint_device = self.env['hr.fingerprint.device'].search([('iot_device_id', '=', device.id)], limit=1)
                 if not fingerprint_device:
-                    print("WWWWWWWWWWWWWWWWW")
                     self.env['hr.fingerprint.device'].create({
                         'name': display_name if display_name else device.name,
                         'connection_mode': 'iot',
