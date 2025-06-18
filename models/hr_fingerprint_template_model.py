@@ -11,42 +11,42 @@ except ImportError:
 
 class HrFingerprintTemplate(models.Model): 
     _name = 'hr.fingerprint.template'
-    _description = 'Fingerprint Template'
+    _description = _("Fingerprint Template")
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     device_id = fields.Many2one(
         'hr.fingerprint.device', 
-        string='Device', 
+        string=_('Device'), 
         required=True,
         ondelete='cascade',
     )
     user_id = fields.Many2one(
         'hr.fingerprint.user', 
-        string='User', 
+        string=_('User'), 
         required=True,
         ondelete='cascade',
     )
-    
-    fingerprint_id = fields.Integer(string='Fingerprint ID', required=True,)
-    template = fields.Binary(string='Template', required=True,)
-    mark = fields.Binary(string='Mark')
-    
-    size = fields.Integer(string='Size',)
-    valid = fields.Integer(string='Valid', default=1)
-    display_name = fields.Char(string='Display Name', compute='_compute_display_name', store=True)
+
+    fingerprint_id = fields.Integer(string=_('Fingerprint ID'), required=True,)
+    template = fields.Binary(string=_('Template'), required=True,)
+    mark = fields.Binary(string=_('Mark'))
+
+    size = fields.Integer(string=_('Size'),)
+    valid = fields.Integer(string=_('Valid'), default=1)
+    display_name = fields.Char(string=_('Display Name'), compute='_compute_display_name', store=True)
     finger_name = fields.Selection([
-        ('0', 'Right Thumb'),
-        ('1', 'Right Index Finger'),
-        ('2', 'Right Middle Finger'),
-        ('3', 'Right Ring Finger'),
-        ('4', 'Right Little Finger'),
-        ('5', 'Left Thumb'),
-        ('6', 'Left Index Finger'),
-        ('7', 'Left Middle Finger'),
-        ('8', 'Left Ring Finger'),
-        ('9', 'Left Little Finger'),
-    ], string='Finger Name', compute='_compute_finger_name', store=True)
-    
+        ('0', _('Right Thumb')),
+        ('1', _('Right Index Finger')),
+        ('2', _('Right Middle Finger')),
+        ('3', _('Right Ring Finger')),
+        ('4', _('Right Little Finger')),
+        ('5', _('Left Thumb')),
+        ('6', _('Left Index Finger')),
+        ('7', _('Left Middle Finger')),
+        ('8', _('Left Ring Finger')),
+        ('9', _('Left Little Finger')),
+    ], string=_('Finger Name'), compute='_compute_finger_name', store=True)
+
     @api.depends('fingerprint_id')
     def _compute_finger_name(self):
         for template in self:

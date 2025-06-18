@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools.translate import _
-
 from odoo import models, fields, api, _
 from odoo.modules.registry import Registry
 from datetime import datetime
@@ -29,7 +27,7 @@ def convert_timestamp(ts):
 
 class HrFingerprintDevice(models.Model):
     _name = 'hr.fingerprint.device'
-    _description = ' Hr Fingerprint Device Management'
+    _description = _(' Hr Fingerprint Device Management')
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     BATCH_SIZE = 1000
@@ -37,140 +35,140 @@ class HrFingerprintDevice(models.Model):
     stop_events = {}  # قاموس لتخزين كائنات Event للتحكم في إيقاف الـ threads
     
     # Fields for device information
-    name = fields.Char(string='Device Display Name', readonly=True, )
-    device_name = fields.Char(string='Main Device Name', readonly=True, )
-    serial_number = fields.Char(string='Serial Number', readonly=True, )
-    model = fields.Char(string='Model', readonly=True, )
-    firmware_version = fields.Char(string='Firmware Version', readonly=True, )
-    platform = fields.Char(string='Model', readonly=True, )
-    manufacturer = fields.Char(string='Manufacturer', default='ZKTeco', readonly=True, )
-    mac_address = fields.Char(string='MAC Address', readonly=True, )
+    name = fields.Char(string=_('Device Display Name'), readonly=True, )
+    device_name = fields.Char(string=_('Main Device Name'), readonly=True, )
+    serial_number = fields.Char(string=_('Serial Number'), readonly=True, )
+    model = fields.Char(string=_('Model'), readonly=True, )
+    firmware_version = fields.Char(string=_('Firmware Version'), readonly=True, )
+    platform = fields.Char(string=_('Model'), readonly=True, )
+    manufacturer = fields.Char(string=_('Manufacturer'), default='ZKTeco', readonly=True, )
+    mac_address = fields.Char(string=_('MAC Address'), readonly=True, )
 
     # Fields for connection type of device
     connection_mode = fields.Selection([
-        ('iot', 'IoT Box'),
-        ('direct', 'Direct'),
-        ('push', 'Push'),
-    ], string='Connection Mode', required=True, )
+        ('iot', _('IoT Box')),
+        ('direct', _('Direct')),
+        ('push', _('Push')),
+    ], string=_('Connection Mode'), required=True, )
 
     connection_type = fields.Selection([
-        ('network', 'Network'),
-        ('serial', 'Serial'),
-        ('usb', 'USB'),
-    ], string='Connection Type', default="network", readonly=True, )
+        ('network', _('Network')),
+        ('serial', _('Serial')),
+        ('usb', _('USB')),
+    ], string=_('Connection Type'), default="network", readonly=True, )
 
     # Fields for using IoT device
     # use_iot_box = fields.Boolean(string='Uses IoT Box', readonly=True, help="Check this box if the device is connected through an IoT Box.")
     
     iot_device_id = fields.Many2one(
-        'iot.device', 
-        string='IoT Device',
+        'iot.device',
+        string=_('IoT Device'),
         domain="[('type', '=', 'biometric')]",
         readonly=True,
     )
 
     # For Network connection
-    ip_address = fields.Char(string='IP Address/URLs', readonly=True, )
-    port = fields.Integer(string='Port', default=4370, readonly=True, )
-    password = fields.Char(string='Device Password', readonly=True, )
+    ip_address = fields.Char(string=_('IP Address/URLs'), readonly=True, )
+    port = fields.Integer(string=_('Port'), default=4370, readonly=True, )
+    password = fields.Char(string=_('Device Password'), readonly=True, )
     protocol = fields.Selection([
         ('tcp', 'TCP/IP'),
         ('udp', 'UDP')
-    ], string='Protocol', default='tcp', readonly=True, )
-    subnet_mask = fields.Char(string='Subnet Mask', readonly=True, )
-    gateway = fields.Char(string='Gateway', readonly=True, help="e.g., 192.168.1.1")
-    
+    ], string=_('Protocol'), default='tcp', readonly=True, )
+    subnet_mask = fields.Char(string=_('Subnet Mask'), readonly=True, )
+    gateway = fields.Char(string=_('Gateway'), readonly=True, help="e.g., 192.168.1.1")
+
     connection_status = fields.Selection([
             ('connected', 'Connected'),
             ('disconnected', 'Disconnected'),
             ('unknown', 'Unknown')
         ], 
-        string='Connection Status', 
+        string=_('Connection Status'), 
         compute='_compute_connection_status', 
         store=True, 
         readonly=True, 
     )
 
-    last_connected = fields.Datetime(string='Last Connected', readonly=True)
+    last_connected = fields.Datetime(string=_('Last Connected'), readonly=True)
 
     # last_synchronized = fields.Datetime(string='Last Synchronized', readonly=True) 
 
     # Setting Fields
-    connection_timeout = fields.Integer(string='Connection Timeout (seconds)', default=30, readonly=True,)
+    connection_timeout = fields.Integer(string=_('Connection Timeout (seconds)'), default=30, readonly=True,)
 
-    auto_sync_time = fields.Boolean(string='Auto Synchronize Time')
+    auto_sync_time = fields.Boolean(string=_('Auto Synchronize Time'))
 
 
     verify_method = fields.Selection([
-        ('fingerprint', 'Fingerprint Only'),
-        ('card', 'Card Only'),
-        ('mixed', 'Fingerprint + Card'),
-        ('face', 'Face Recognition')
-    ], string='Verification Method', default='fingerprint',readonly=True, )
-    active_device = fields.Boolean(string='Active', default=True)
+        ('fingerprint', _("Fingerprint Only")),
+        ('card', _("Card Only")),
+        ('mixed', _("Fingerprint + Card")),
+        ('face', _("Face Recognition"))
+    ], string=_('Verification Method'), default='fingerprint',readonly=True, )
+    active_device = fields.Boolean(string=_('Active'), default=True)
 
     # Device Setting Fields (Configuration)
-    photo_fun_on = fields.Boolean(string='Photo Function Enabled')
-    finger_fun_on = fields.Boolean(string='Fingerprint Function Enabled')
-    face_fun_on = fields.Boolean(string='Face Recognition Enabled')
-    fv_fun_on = fields.Boolean(string='FV Function Enabled')
-    pv_fun_on = fields.Boolean(string='PV Function Enabled')
-    error_delay = fields.Integer('Error Delay (seconds)', default=30)
-    trans_interval = fields.Integer('Transmission Interval (minutes)', default=10)
-    realtime = fields.Boolean('Realtime Update', default=True)
-    delay = fields.Integer('Delay (seconds)', default=10)
-    trans_times = fields.Char('Transmission Times', default='00:00;14:05')
+    photo_fun_on = fields.Boolean(string=_('Photo Function Enabled'))
+    finger_fun_on = fields.Boolean(string=_('Fingerprint Function Enabled'))
+    face_fun_on = fields.Boolean(string=_('Face Recognition Enabled'))
+    fv_fun_on = fields.Boolean(string=_('FV Function Enabled'))
+    pv_fun_on = fields.Boolean(string=_('PV Function Enabled'))
+    error_delay = fields.Integer(string=_('Error Delay (seconds)'), default=30)
+    trans_interval = fields.Integer(string=_('Transmission Interval (minutes)'), default=10)
+    realtime = fields.Boolean(string=_('Realtime Update'), default=True)
+    delay = fields.Integer(string=_('Delay (seconds)'), default=10)
+    trans_times = fields.Char(string=_('Transmission Times'), default='00:00;14:05')
 
     # Statistic Fields
-    user_count = fields.Integer(string='User Count', default=0,)
-    max_user_count = fields.Integer(string='Max User Count', default=0,)
+    user_count = fields.Integer(string=_('User Count'), default=0,)
+    max_user_count = fields.Integer(string=_('Max User Count'), default=0,)
 
-    fp_count = fields.Integer(string='Fingerprint Count', default=0,)
-    max_finger_count = fields.Integer(string='Max Finger Count', default=0,)
+    fp_count = fields.Integer(string=_('Fingerprint Count'), default=0,)
+    max_finger_count = fields.Integer(string=_('Max Finger Count'), default=0,)
 
-    face_count = fields.Integer(string='Face Count', default=0,)
-    max_face_count = fields.Integer(string='Max Face Count', default=0,)
+    face_count = fields.Integer(string=_('Face Count'), default=0,)
+    max_face_count = fields.Integer(string=_('Max Face Count'), default=0,)
 
-    fv_count = fields.Integer(string='FV Count', default=0,)
-    max_fv_count = fields.Integer(string='Max FV Count', default=0,)
-    pv_count = fields.Integer(string='PV Count', default=0,)
-    max_pv_count = fields.Integer(string='Max PV Count', default=0,)
-    transaction_count = fields.Integer(string='Transaction Count', default=0, readonly=True)
-    max_user_photo_count = fields.Integer(string='Max User Photo Count')
-    max_att_log_count = fields.Integer(string='Max Attendance Log Count')
+    fv_count = fields.Integer(string=_('FV Count'), default=0,)
+    max_fv_count = fields.Integer(string=_('Max FV Count'), default=0,)
+    pv_count = fields.Integer(string=_('PV Count'), default=0,)
+    max_pv_count = fields.Integer(string=_('Max PV Count'), default=0,)
+    transaction_count = fields.Integer(string=_('Transaction Count'), default=0, readonly=True)
+    max_user_photo_count = fields.Integer(string=_('Max User Photo Count'))
+    max_att_log_count = fields.Integer(string=_('Max Attendance Log Count'))
     att_log_count = fields.Integer(
-        string='Attendance Log Count',
+        string=_('Attendance Log Count'),
         compute='_compute_att_log_count',
         store=False,
         readonly=True
     )
 
     user_usage = fields.Char(
-        string='Users Usage',
+        string=_('Users Usage'),
         compute='_compute_user_usage',
         store=False,
         readonly=True
     )
     fp_usage = fields.Char(
-        string='Fingerprint Usage',
+        string=_('Fingerprint Usage'),
         compute='_compute_fp_usage',
         store=False,
         readonly=True
     )
     face_usage = fields.Char(
-        string='Face Usage',
+        string=_('Face Usage'),
         compute='_compute_face_usage',
         store=False,
         readonly=True
     )
     fv_usage = fields.Char(
-        string='FV Usage',
+        string=_('FV Usage'),
         compute='_compute_fv_usage',
         store=False,
         readonly=True
     )
     pv_usage = fields.Char(
-        string='PV Usage',
+        string=_('PV Usage'),
         compute='_compute_pv_usage',
         store=False,
         readonly=True
@@ -178,43 +176,43 @@ class HrFingerprintDevice(models.Model):
 
     
     # Relation Fields
-    user_ids = fields.One2many('hr.fingerprint.user', 'device_id', string='Users')
-    template_ids = fields.One2many('hr.fingerprint.template', 'device_id', string='Fingerprints')
-    attendance_ids = fields.One2many('fingerprint.attendance', 'device_id', string='Attendance Records')
+    user_ids = fields.One2many('hr.fingerprint.user', 'device_id', string=_('Users'))
+    template_ids = fields.One2many('hr.fingerprint.template', 'device_id', string=_('Fingerprints'))
+    attendance_ids = fields.One2many('fingerprint.attendance', 'device_id', string=_('Attendance Records'))
     command_ids = fields.One2many(
         'fingerprint.device.command', 
         'device_id', 
-        string='Device Commands',
+        string=_('Device Commands'),
     )
     language = fields.Selection(
         selection=[
             ('69', 'العربية'), 
             ('1', 'English'),
         ],
-        string='Language'
+        string=_('Language')
     )
-    push_version = fields.Char(string='Push Version')
-    oem_vendor = fields.Char(string='OEM Vendor')
-    reg_device_type = fields.Integer(string='Registered Device Type')
-    last_communication = fields.Datetime(string='Last Communication', readonly=True)
+    push_version = fields.Char(string=_('Push Version'))
+    oem_vendor = fields.Char(string=_('OEM Vendor'))
+    reg_device_type = fields.Integer(string=_('Registered Device Type'))
+    last_communication = fields.Datetime(string=_('Last Communication'), readonly=True)
 
     # إصدارات الميزات
-    fp_version = fields.Char(string='Fingerprint Version')
-    face_version = fields.Char(string='Face Recognition Version')
-    fv_version = fields.Char(string='FV Version')
-    pv_version = fields.Char(string='PV Version')
+    fp_version = fields.Char(string=_('Fingerprint Version'))
+    face_version = fields.Char(string=_('Face Recognition Version'))
+    fv_version = fields.Char(string=_('FV Version'))
+    pv_version = fields.Char(string=_('PV Version'))
 
     # حقول التهيئة
-    error_delay = fields.Integer('Error Delay (seconds)', default=30)
-    last_attlog_stamp = fields.Integer('Last ATTLOG Stamp')
-    last_operlog_stamp = fields.Integer('Last OPERLOG Stamp')
-    last_attphoto_stamp = fields.Integer('Last ATTPHOTO Stamp')
-    trans_flag = fields.Char('Transmission Flags', default='AttLog OpLog AttPhoto')
-    
-    # Constraints 
+    error_delay = fields.Integer(string=_('Error Delay (seconds)'), default=30)
+    last_attlog_stamp = fields.Integer(string=_('Last ATTLOG Stamp'))
+    last_operlog_stamp = fields.Integer(string=_('Last OPERLOG Stamp'))
+    last_attphoto_stamp = fields.Integer(string=_('Last ATTPHOTO Stamp'))
+    trans_flag = fields.Char(string=_('Transmission Flags'), default='AttLog OpLog AttPhoto')
+
+    # Constraints
     _sql_constraints = [
-        ('serial_number_unique', 'UNIQUE(serial_number)', 'Serial number must be unique!'),
-        ('mac_address_unique', 'UNIQUE(mac_address)', 'Mac address must be unique!'),
+        ('serial_number_unique', 'UNIQUE(serial_number)', _('Serial number must be unique!')),
+        ('mac_address_unique', 'UNIQUE(mac_address)', _('Mac address must be unique!')),
     ]
 
     @api.depends('user_count', 'max_user_count')

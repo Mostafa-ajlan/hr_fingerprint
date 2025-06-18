@@ -11,69 +11,71 @@ except ImportError:
 
 class HrFingerprintUser(models.Model):
     _name = 'hr.fingerprint.user'
-    _description = 'Fingerprint User'
+    _description = _('Fingerprint User')
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _rec_name = 'name'  # Display name in the UI 
+    _order = 'create_date desc, name'  # Order by creation date (desc) and then by name
 
     _sql_constraints = [
         ('unique_uid_per_device', 'unique(uid, device_id)', 'UID must be unique per device!'),
         ('unique_user_id_per_device', 'unique(user_id, device_id)', 'User ID must be unique per device!'),
     ]  
-    name = fields.Char(string='Name', required=True)  
+    name = fields.Char(string=_('Name'), required=True)  
 
     device_id = fields.Many2one(
         'hr.fingerprint.device', 
-        string='Device', 
+        string=_('Device'), 
         required=True, 
         ondelete='cascade',
     ) 
-    connection_device_mode = fields.Selection(related='device_id.connection_mode', string='Connection Mode', readonly=True)
+    connection_device_mode = fields.Selection(related='device_id.connection_mode', string=_('Connection Mode'), readonly=True)
     
     partner_id = fields.Many2one(
-        'res.partner', 
-        string="Partner", 
-        compute='_compute_partner_id', 
-        store=True
+        'res.partner',
+        string=_("Partner"),
+        compute='_compute_partner_id',
+        store=True,
+        readonly=False,
+        ondelete='set null'
     )
     user_id = fields.Char(
-        string='User ID', 
+        string=_("User ID"), 
         default=False,
         index=True,
-        help='User ID in the fingerprint device'
+        help=_('User ID in the fingerprint device')
     )
     uid = fields.Char(
-        string='UID', 
+        string=_("UID"), 
         default=False,
-        help='Unique ID for the user in the fingerprint device'
+        help=_('Unique ID for the user in the fingerprint device')
     )
     privilege = fields.Selection([
         ('0', 'User'),
         ('2', 'Enroller'),
         ('6', 'Admin'),
         ('14', 'Super Admin')
-    ], string='Privilege', default='0',)
-    
-    password = fields.Char(string='Password',)
-    group_id = fields.Char(string='Group ID')
-    card = fields.Char(string='Card Number',)
+    ], string=_('Privilege'), default='0',)
+
+    password = fields.Char(string=_('Password'),)
+    group_id = fields.Char(string=_('Group ID'))
+    card = fields.Char(string=_('Card Number'),)
     active_user = fields.Boolean(default=True)
-    
-    image = fields.Char(string='Image', attachment=True)
-    image_filename = fields.Char(string='Image File Name', help="File name of the user photo")
-    image_size = fields.Integer(string='Image Size (bytes)', help="Size of the user photo in bytes")
-    start_datetime = fields.Datetime(string='Start Validity', help="Start date and time for user validity")
-    end_datetime = fields.Datetime(string='End Validity', help="End date and time for user validity")
-    
-    
-    template_ids = fields.One2many('hr.fingerprint.template', 'user_id', string='Fingerprints' , help="Fingerprints associated with this user")
+
+    image = fields.Char(string=_('Image'), attachment=True)
+    image_filename = fields.Char(string=_('Image File Name'), help=_("File name of the user photo"))
+    image_size = fields.Integer(string=_('Image Size (bytes)'), help=_("Size of the user photo in bytes"))
+    start_datetime = fields.Datetime(string=_('Start Validity'), help=_("Start date and time for user validity"))
+    end_datetime = fields.Datetime(string=_('End Validity'), help=_("End date and time for user validity"))
+
+    template_ids = fields.One2many('hr.fingerprint.template', 'user_id', string=_('Fingerprints'), help=_("Fingerprints associated with this user"))
     biometric_data_ids = fields.One2many(
-        'hr.fingerprint.user.biometric', 'user_id', string='Biometric Data'
+        'hr.fingerprint.user.biometric', 'user_id', string=_('Biometric Data')
     )
     attendance_ids = fields.One2many(
-        'fingerprint.attendance', 'user_id', string='Attendances',
+        'fingerprint.attendance', 
+        'user_id', 
+        string=_('Attendances')
     )
-
-    
     
     @api.depends('user_id')
     def _compute_partner_id(self):
@@ -81,8 +83,6 @@ class HrFingerprintUser(models.Model):
             partner = self.env['res.partner'].sudo().search([('fingerprint_user_number', '=',record.user_id)], limit=1)
             record.partner_id = partner.id if partner else False   
 
-    
-    
     # @api.constrains('partner_id', 'device_id', 'user_id')
     # def _check_partner_and_device_uniqueness(self):
     #     for record in self:
@@ -172,6 +172,28 @@ class HrFingerprintUser(models.Model):
     def create(self, vals_list):
         result_records = self.env['hr.fingerprint.user']
         for vals in vals_list:
+            # Add user id from partner
+            # تحقق من partner_id إذا تم تمريره في vals
+            partner_id = vals.get('partner_id')
+            if partner_id:
+                partner = self.env['res.partner'].sudo().browse(partner_id)
+                if partner.exists():
+                    # تحقق إذا كان partner لديه fingerprint_user_number مختلف
+                    if partner.fingerprint_user_number and partner.fingerprint_user_number != vals.get('user_id'):
+                        raise UserError(
+                            _("This contact is already linked to a different fingerprint user number (%s).") % partner.fingerprint_user_number
+                        )
+                    # إذا لم يكن لديه fingerprint_user_number، حدثه
+                    if not partner.fingerprint_user_number and vals.get('user_id'):
+                        partner.fingerprint_user_number = vals.get('user_id')
+                    # ربط جميع المستخدمين الذين لديهم نفس user_id بجهة الاتصال المختارة
+                    if vals.get('user_id'):
+                        same_user_id_users = self.env['hr.fingerprint.user'].sudo().search([
+                            ('user_id', '=', vals.get('user_id'))
+                        ])
+                        for u in same_user_id_users:
+                            u.partner_id = partner.id
+            # إذا لم يكن الطلب من الواجهة الأمامية، فقط احفظ في القاعدة
             if not self.env.context.get('from_frontend'):
                 record = super(HrFingerprintUser, self).create([vals])
                 result_records += record
@@ -207,9 +229,70 @@ class HrFingerprintUser(models.Model):
 
     def write(self, vals):
         for user in self:
+            # منع تعديل الجهاز أو user_id بعد الإنشاء
+            if 'device_id' in vals and vals['device_id'] != user.device_id.id:
+                raise UserError(_("Device cannot be modified after user creation."))
+            if 'user_id' in vals and vals['user_id'] != user.user_id:
+                raise UserError(_("User ID cannot be modified after creation."))
+
+            # إذا كان هناك تغيير في user_id، قم بتحديث partner_id
+            if vals.get('partner_id'):
+                if vals.get('partner_id') is not False:
+                    partner = self.env["res.partner"].sudo().search(
+                        [('id', '=', vals.get('partner_id'))], limit=1
+                    )
+                    # Check if the partner already has a fingerprint_user_number
+                    # and it is different from the current user_id
+                    if partner.fingerprint_user_number and partner.fingerprint_user_number != user.user_id:
+                        raise UserError(_("This partner is already linked to another fingerprint user number (%s). "
+                                "It cannot be linked to a different number."
+                            )
+                            % partner.fingerprint_user_number
+                        )
+                    user_id_users = self.env['hr.fingerprint.user'].sudo().search(
+                        [('user_id', '=', user.user_id),('id', '!=', user.id),('partner_id', '!=', False)]
+                    )
+                    if user_id_users:
+                        # إذا كان هناك مستخدمين آخرين بنفس user_id مرتبطين بجهة اتصال مختلفة، ارفع خطأ
+                        # هذا يمنع ربط نفس user_id بجهات اتصال مختلفة
+                        for u in user_id_users:
+                            if u.partner_id.id != partner.id:
+                                raise UserError(_("This user ID is already linked to another partner (%s). "
+                                        "It cannot be linked to a different partner."
+                                    )
+                                    % u.partner_id.name
+                                )
+                    try:
+                        partner.fingerprint_user_number = user.user_id
+                    except Exception as e:
+                        old_fingerprint_user_number = None
+                        partner.fingerprint_user_number = old_fingerprint_user_number
+                        raise UserError(
+                            _(
+                                "An error occurred while updating the fingerprint user number "
+                                "for the partner: %s"
+                            )
+                            % str(e)
+                        )
+            
+            elif vals.get('partner_id') == False:
+                # إذا تم إفراغ جهة الاتصال، أفرغ رقم المستخدم في جهة الاتصال إذا لم يوجد مستخدمين آخرين بنفس الرقم
+                other_users = self.env['hr.fingerprint.user'].sudo().search([
+                    ('partner_id', '=', user.partner_id.id),
+                    ('id', '!=', user.id),
+                    ('user_id', '=', user.user_id)
+                ], limit=1)
+                if not other_users:
+                    partner = self.env["res.partner"].sudo().search([('id', '=', user.partner_id.id)], limit=1)
+                    self.env.cr.execute(
+                        "UPDATE res_partner SET fingerprint_user_number = NULL WHERE id = %s",
+                        (partner.id,)
+                    )
+                    
+            # إذا لم يكن الطلب من الواجهة الأمامية، فقط عدل في القاعدة
             if not self.env.context.get('from_frontend'):
                 return super(HrFingerprintUser, user).write(vals)
-
+         
             mode = user.connection_device_mode
             if mode == 'direct':
                 if not self._sync_user_in_device(user.device_id, user=user, vals=vals):
@@ -268,23 +351,39 @@ class HrFingerprintUser(models.Model):
             
         
 
+        # return super(HrFingerprintUser, self).unlink()
+
+    def unlink(self):
+        for user in self:
+            # Unlink attendance records
+            attendance_records = self.env['fingerprint.attendance'].search([('user_id', '=', user.id)])
+            if attendance_records:
+                attendance_records.write({'user_id': False})
+
+            # If the user is linked to a partner, and this partner is not linked to any other users, clear the fingerprint_user_number
+            if user.partner_id:
+                other_users = self.env['hr.fingerprint.user'].search([
+                    ('partner_id', '=', user.partner_id.id),
+                    ('id', '!=', user.id)
+                ], )
+                if not other_users:
+                    user.partner_id.fingerprint_user_number = False
+        return super(HrFingerprintUser, self).unlink()    
                 
 # Model to hold biometric data for users 
 class HRFingerprintUserBiometric(models.Model):
     _name = 'hr.fingerprint.user.biometric'
-    _description = 'Biometric Data'
+    _description = _('Biometric Data')
 
     user_id = fields.Many2one('hr.fingerprint.user', 'User', required=True)
-    index = fields.Integer(string='Index')
-    valid = fields.Boolean(string='Valid')
-    duress = fields.Boolean(string='Duress')
-    version_major = fields.Integer(string="Major Ver")
-    version_minor = fields.Integer(string="Minor Ver")
+    index = fields.Integer(string=_('Index'))
+    valid = fields.Boolean(string=_('Valid'))
+    duress = fields.Boolean(string=_('Duress'))
+    version_major = fields.Integer(string=_("Major Ver"))
+    version_minor = fields.Integer(string=_("Minor Ver"))
     no = fields.Integer()
-    type = fields.Integer(string='Biometric Type')  # 2: Palm, 8: Face
+    type = fields.Integer(string=_('Biometric Type'))  # 2: Palm, 8: Face
     major_ver = fields.Integer()
     minor_ver = fields.Integer()
     format = fields.Integer()
-    template = fields.Text(string='Biometric Template')
-
-    
+    template = fields.Text(string=_('Biometric Template'))
