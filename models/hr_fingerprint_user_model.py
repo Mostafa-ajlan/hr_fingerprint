@@ -212,12 +212,25 @@ class HrFingerprintUser(models.Model):
                 result_records += record
             elif mode == 'push':
                 # pass
-                device = self.env['zk.device.command'].create({
-                    'name': 'update log',
-                    'cmd_id': 199,
-                    'command_type': 'log',
-                    'device_id': vals.get('device_id'),
-                })
+                try:
+                    dict_vals={}
+                    device = self.env['hr.fingerprint.device'].browse(vals['device_id'])
+                    if not device:
+                        raise UserError(_("Device not found."))
+                    dict_vals['name'] = 'update user'
+                    dict_vals['command_type'] = 'update_userinfo'
+                    dict_vals['user_id'] = vals.get('user_id')
+                    dict_vals['device_id'] = device.id 
+                    dict_vals['name_value'] = vals.get('name') or None
+                    dict_vals['password'] = vals.get('password') or None
+                    dict_vals['card'] = vals.get('card') or None
+                    dict_vals['group_id'] = vals.get('group_id') or None
+                    dict_vals['privilege'] = vals.get('privilege') or None
+                    device = self.env['zk.device.command'].create(dict_vals)
+                except Exception as e:
+                    print(e)
+                # if not self._sync_user_in_device(user.device_id, user=user, vals=vals):
+                    raise UserError(_("فشل تحديث المستخدم في جهاز البصمة (push). لم يتم حفظ التعديلات."))
                 # if not self._sync_user_in_device(device, user=None, vals=vals):
                 #     raise UserError(_("فشل إضافة المستخدم للجهاز (push). لم يتم حفظ المستخدم."))
                 record = super(HrFingerprintUser, self).create([vals])
@@ -304,8 +317,23 @@ class HrFingerprintUser(models.Model):
                     raise UserError(_("فشل تحديث المستخدم في جهاز البصمة. لم يتم حفظ التعديلات."))                
                 return super(HrFingerprintUser, user).write(vals)
             elif mode == 'push':
+                try:
+                    dict_vals={}
+
+                    dict_vals['name'] = 'update user'
+                    dict_vals['command_type'] = 'update_userinfo'
+                    dict_vals['user_id'] = user.user_id
+                    dict_vals['device_id'] = user.device_id.id
+                    dict_vals['name_value'] = vals.get('name') or None
+                    dict_vals['password'] = vals.get('password') or None
+                    dict_vals['card'] = vals.get('card') or None
+                    dict_vals['group_id'] = vals.get('group_id') or None
+                    dict_vals['privilege'] = vals.get('privilege') or None
+                    device = self.env['zk.device.command'].create(dict_vals)
+                except Exception as e:
+                    print(e)
                 # if not self._sync_user_in_device(user.device_id, user=user, vals=vals):
-                #     raise UserError(_("فشل تحديث المستخدم في جهاز البصمة (push). لم يتم حفظ التعديلات."))
+                    raise UserError(_("فشل تحديث المستخدم في جهاز البصمة (push). لم يتم حفظ التعديلات."))
                 return super(HrFingerprintUser, user).write(vals)
             elif mode == 'iot':
                 if not self.env.context.get('iot_synced'):
