@@ -206,6 +206,7 @@
                                     <field name="delay" />
                                     <field name="trans_interval" />
                                     <field name="trans_times" />
+                                    <field name="language" />
                                     <field name="realtime" />
                                 </group>
                                 <group>

@@ -29,7 +29,7 @@ class HrFingerprintDevice(models.Model):
     _name = 'hr.fingerprint.device'
     _description = _(' Hr Fingerprint Device Management')
     _inherit = ['mail.thread', 'mail.activity.mixin']
-
+    _order = 'write_date desc , create_date desc'
     BATCH_SIZE = 1000
     device_threads = {}
     stop_events = {}  # قاموس لتخزين كائنات Event للتحكم في إيقاف الـ threads
@@ -111,14 +111,13 @@ class HrFingerprintDevice(models.Model):
     photo_fun_on = fields.Boolean(string=_('Photo Function Enabled'))
     finger_fun_on = fields.Boolean(string=_('Fingerprint Function Enabled'))
     face_fun_on = fields.Boolean(string=_('Face Recognition Enabled'))
-    fv_fun_on = fields.Boolean(string=_('FV Function Enabled'))
-    pv_fun_on = fields.Boolean(string=_('PV Function Enabled'))
+    fv_fun_on = fields.Boolean(string=_('Face Verification Function Enabled'))
+    pv_fun_on = fields.Boolean(string=_('Palm Verification Function Enabled'))
     error_delay = fields.Integer(string=_('Error Delay (seconds)'), default=30)
     trans_interval = fields.Integer(string=_('Transmission Interval (minutes)'), default=10)
     realtime = fields.Boolean(string=_('Realtime Update'), default=True)
     delay = fields.Integer(string=_('Delay (seconds)'), default=10)
     trans_times = fields.Char(string=_('Transmission Times'), default='00:00;14:05')
-
     # Statistic Fields
     user_count = fields.Integer(string=_('User Count'), default=0,)
     max_user_count = fields.Integer(string=_('Max User Count'), default=0,)
@@ -186,8 +185,8 @@ class HrFingerprintDevice(models.Model):
     )
     language = fields.Selection(
         selection=[
-            ('69', 'العربية'), 
-            ('1', 'English'),
+            ('66', 'العربية'), 
+            ('69', 'English'),
         ],
         string=_('Language')
     )
@@ -222,7 +221,6 @@ class HrFingerprintDevice(models.Model):
                 rec.user_count or 0,
                 rec.max_user_count or 0
             )
-    
     
     @api.depends('fp_count', 'max_finger_count')
     def _compute_fp_usage(self):
@@ -270,7 +268,6 @@ class HrFingerprintDevice(models.Model):
             else:
                 device.connection_status = 'unknown'
     
-    
     def _check_direct_connection(self, ip_address, port):
         try:
             zk_device = ZK(ip_address, port=port, timeout=5)
@@ -280,8 +277,6 @@ class HrFingerprintDevice(models.Model):
         except Exception:
             return 'disconnected'
     
-    
-   
     @api.model
     def get_server_datetime(self):
         """
@@ -470,7 +465,6 @@ class HrFingerprintDevice(models.Model):
             _logger.error("Error fetching templates from device: %s", str(e))
             return []
     
-    
     def _fetch_and_create_templates(self, zk_device):
         """جلب وإنشاء القوالب"""
         try:
@@ -484,7 +478,6 @@ class HrFingerprintDevice(models.Model):
         except Exception as e:
             _logger.error("Error creating templates: %s", str(e))
             return False 
-
 
     def _fetch_attendance(self, zk_device):
         try:
@@ -700,7 +693,6 @@ class HrFingerprintDevice(models.Model):
         
         return result
 
-
     def _handle_fetch_user(self, device, zk_device, conn, result):
         """معالج جلب المستخدمين"""
         created = device._fetch_and_create_users(zk_device)
@@ -808,7 +800,9 @@ class HrFingerprintDevice(models.Model):
             if vals['auto_sync_time']:
                 self.start_live_caputre()
             else:
-                self.end_live_caputre()   
+                self.end_live_caputre()
+        elif self.connection_mode == 'push':
+            self.change_setting_device_push_in_update(vals)
         return result
     
     def start_live_caputre(self):
@@ -1331,3 +1325,95 @@ class HrFingerprintDevice(models.Model):
             # new_vals['status'] = 'online'
             # self.message_post(body="Device came online")
         self.write(new_vals)
+    
+    def create_command(self, name, option_key, option_value):
+        """
+        this function creates a command to change the device settings
+        and returns True if the command was created successfully.
+        """
+        command_vals = {
+            'name': name,
+            'device_id': self.id,
+            'command_type': 'set_option',
+            'option_key': option_key,
+            'option_value': option_value,
+            'state': 'pending',
+            # 'created_by': self.env.user.id,
+        }
+        self.env['zk.device.command'].sudo().create(command_vals)
+    def change_setting_device_push_in_update(self, vals):
+        """
+        This function creates commands to change device settings (for push devices).
+        Sends each changed setting as a separate command, prefixed with 'SST OPTION'.
+        Only for changing settings.
+        """
+        # for
+        # try:
+        self.ensure_one()
+        if vals:
+            # Photo Function Enabled Or Disabled 	تفعيل/تعطيل تخزين الصور
+            if "photo_fun_on" in vals:
+                value = self.change_val_bool_to_0_or_1(vals['photo_fun_on'])
+                self.create_command("Change PhotoFunOn", 'PhotoFunOn', value)
+            # Fingerprint Function Enabled Or Disabled تفعيل/تعطيل البصمة
+            if "finger_fun_on" in vals:
+                value = self.change_val_bool_to_0_or_1(vals['finger_fun_on'])
+                self.create_command("Change FingerFunOn", 'FingerFunOn', value)
+            # Face Recognition Enabled Or Disabled تفعيل/تعطيل التعرف على الوجه
+            if "face_fun_on" in vals:
+                value = self.change_val_bool_to_0_or_1(vals['face_fun_on'])
+                self.create_command("Change FaceFunOn", 'FaceFunOn', value)
+            #  VOLUME 	تغيير مستوى الصوت
+            if "volume" in vals:
+                value = vals['volume']
+                self.create_command("Change Volume", 'VOLUME', value)
+            # Brightness     تغيير مستوى السطوع
+            if "brightness" in vals:
+                value = vals['brightness']
+                self.create_command("Change Brightness", 'Brightness', value)    
+            # Fingerprint Verification Function Enabled Or Disabled 	تفعيل/تعطيل Face Verification
+            if "fv_fun_on" in vals:
+                value = self.change_val_bool_to_0_or_1(vals['fv_fun_on'])
+                self.create_command("Change FvFunOn", 'FvFunOn', value)
+            # Face Recognition Verification Function Enabled Or Disabled تفعيل/تعطيل Palm Verification
+            if "pv_fun_on" in vals:
+                value = self.change_val_bool_to_0_or_1(vals['pv_fun_on'])
+                self.create_command("Change PvFunOn", 'PvFunOn', value)
+            # Change IPAddress
+            if "ip_address" in vals:
+                value = vals['ip_address']
+                self.create_command("Change IPAddress", 'IPAddress', value)
+            # Change VisilightFunOn 	تفعيل/تعطيل الضوء المرئي
+            if "visilight_fun_on" in vals:
+                value = self.change_val_bool_to_0_or_1(vals['visilight_fun_on'])
+                self.create_command("Change VisilightFunOn", 'VisilightFun', value)  
+            # Change IRTempDetectionFunOn 	تفعيل/تعطيل كشف الحرارة
+            if "ir_temp_detection_fun_on" in vals:
+                value = self.change_val_bool_to_0_or_1(vals['ir_temp_detection_fun_on'])
+                self.create_command("Change IRTempDetectionFunOn", 'IRTempDetectionFunOn', value)
+            # Change MaskDetectionFunOn تفعيل/تعطيل كشف الكمامة
+            if "mask_detection_fun_on" in vals:
+                value = self.change_val_bool_to_0_or_1(vals['mask_detection_fun_on'])
+                self.create_command("Change MaskDetectionFunOn", 'MaskDetectionFunOn', value)
+            # Change Language
+            if "language" in vals:
+                value = vals['language']
+                self.create_command("Change Language", 'Language', value)
+            # if "timezone" in vals:
+            #     value = vals['timezone']
+            #     self.create_command("Change Timezone", 'Timezone', value)
+            # if "auto_sync_time" in vals:
+            #     value = self.change_val_bool_to_0_or_1(vals['auto_sync_time'])
+            #     self.create_command("Change AutoSyncTime", 'AutoSyncTime', value)
+
+        # except Exception as e:
+        #     _logger.error(f"Device {self.id} is not connected: {e}")
+        #     return False
+
+    def change_val_bool_to_0_or_1(self, val):
+        """
+        Convert boolean value to 0 or 1 for device compatibility.
+        """
+        if isinstance(val, bool):
+            return 1 if val else 0
+        return val
