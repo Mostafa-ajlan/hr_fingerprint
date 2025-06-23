@@ -203,10 +203,10 @@ class HrFingerprintUser(models.Model):
             if mode == 'direct':
                 device = self.env['hr.fingerprint.device'].browse(vals['device_id'])
                 if not self._sync_user_in_device(device, user=None, vals=vals):
-                    raise UserError(_("فشل إضافة المستخدم للجهاز. لم يتم حفظ المستخدم لأن الجهاز غير متوفر."))
+                    raise UserError(_("Failed to add the user to the device. The user was not saved because the device is unavailable."))
                 user_in_device = device._fetch_user_by_user_id(vals.get('user_id',''))
                 if not user_in_device:
-                    raise UserError(_("فشل إضافة المستخدم للجهاز. لم يتم حفظ المستخدم لأن الجهاز غير متوفر."))
+                    raise UserError(_("Failed to add the user to the device. The user was not saved because the device is unavailable."))
                 vals['uid'] = user_in_device.get('uid', False)
                 record = super(HrFingerprintUser, self).create([vals])
                 result_records += record
@@ -237,7 +237,7 @@ class HrFingerprintUser(models.Model):
                 result_records += record
             elif mode == 'iot':
                 if not self.env.context.get('iot_synced'):
-                    raise UserError(_("يجب مزامنة المستخدم مع جهاز الـ IoT أولاً قبل الحفظ."))
+                    raise UserError(_("You must sync the user with the IoT device first before saving."))
                 record = super(HrFingerprintUser, self).create([vals])
                 result_records += record
             else:
@@ -283,7 +283,7 @@ class HrFingerprintUser(models.Model):
                     try:
                         partner.fingerprint_user_number = user.user_id
                     except Exception as e:
-                        old_fingerprint_user_number = None
+                        old_fingerprint_user_number = partner.fingerprint_user_number
                         partner.fingerprint_user_number = old_fingerprint_user_number
                         raise UserError(
                             _(
@@ -314,7 +314,7 @@ class HrFingerprintUser(models.Model):
             mode = user.connection_device_mode
             if mode == 'direct':
                 if not self._sync_user_in_device(user.device_id, user=user, vals=vals):
-                    raise UserError(_("فشل تحديث المستخدم في جهاز البصمة. لم يتم حفظ التعديلات."))                
+                    raise UserError(_("Failed to update the user in the fingerprint device. Changes were not saved."))
                 return super(HrFingerprintUser, user).write(vals)
             elif mode == 'push':
                 try:
@@ -337,7 +337,7 @@ class HrFingerprintUser(models.Model):
                 return super(HrFingerprintUser, user).write(vals)
             elif mode == 'iot':
                 if not self.env.context.get('iot_synced'):
-                    raise UserError(_("يجب مزامنة المستخدم مع جهاز الـ IoT أولاً قبل التعديل."))
+                    raise UserError(_("You must sync the user with the IoT device first before editing."))
                 return super(HrFingerprintUser, user).write(vals)
             else:
                 return super(HrFingerprintUser, user).write(vals)
