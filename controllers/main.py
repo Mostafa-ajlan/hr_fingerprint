@@ -100,7 +100,7 @@ class FingerprintsController(http.Controller):
                 'device_id': device_id,
                 'user_id': att.get('user_id'),
                 'punching_time': datetime.fromisoformat(att.get('timestamp')),
-                'attendance_type': str(att.get('status')),
+                'attendance_type': '1' if str(att.get('status')) == '0' else str(att.get('status')),
                 'punch_type': str(att.get('punch')),
             })
 
@@ -261,7 +261,30 @@ class FingerprintsController(http.Controller):
                     'device_identifier': device_identifier,
                 })
 
+            elif action == 'create_or_update_users':
+                print("create_or_update_users",data)
+                fingerprint_device = self._get_fingerprint_device(iot_device.id)
+                for user in data:
+                    print(user,"UUUUUUUUUUUUUUUUUUU")
+                    res = request.env['hr.fingerprint.user'].sudo().search([('device_id', '=', fingerprint_device.id),('user_id', '=', user.get('user_id'))], limit=1)
+                    if res:
+                        print(res,"TTTTTTTTTTTTTTTTTTTTT",user)
+                        user.write({
+                            'uid':user.get('uid')
+                        })
+
+                request.env['bus.bus']._sendone(iot_channel, 'fingerprint_iot_devices', {
+                    'action_type': 'create_or_update_users',
+                    'device_identifier': device_identifier,
+                })
+            
             elif action == 'delete_user':
+                request.env['bus.bus']._sendone(iot_channel, 'fingerprint_iot_devices', {
+                    'action_type': 'delete_user',
+                    'device_identifier': device_identifier,
+                })
+
+            elif action == 'delete_users':
                 request.env['bus.bus']._sendone(iot_channel, 'fingerprint_iot_devices', {
                     'action_type': 'delete_user',
                     'device_identifier': device_identifier,

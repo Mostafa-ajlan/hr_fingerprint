@@ -4,7 +4,7 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { FormController } from "@web/views/form/form_controller";
 import { formView } from "@web/views/form/form_view";
-import { handleBiometricIoTConnectionFallbacks2 } from "./iot_implement_action";
+import { handleBiometricIoTConnectionFallbacks } from "./iot_implement_action";
 import {
     deleteConfirmationMessage,
     ConfirmationDialog,
@@ -22,7 +22,6 @@ export class FingerprintUserFormController extends FormController {
         this.state = useState({
             isActive: true, // هل المستخدم نشط
         });
-
     }
 
     async saveButtonClicked(params = {}) {
@@ -49,15 +48,15 @@ export class FingerprintUserFormController extends FormController {
                 group_id: data.group_id,
                 card: data.card,
             };
-            console.log(extraData, "extraDataextraDataextraData")
+
             const args = {
                 iot_device: iot_record[0].iot_device_id,
                 action: 'create_or_update_user',
                 extraData: extraData,
             };
-            try {
 
-                await handleBiometricIoTConnectionFallbacks2(this.env, this.orm, args);
+            try {
+                await handleBiometricIoTConnectionFallbacks(this.env, this.orm, args);
 
                 this.model.root.context['from_frontend'] = true;
                 this.model.root.context['iot_synced'] = true;
@@ -92,7 +91,7 @@ export class FingerprintUserFormController extends FormController {
     //         };
     //         try {
 
-    //             await handleBiometricIoTConnectionFallbacks2(this.env, this.orm, args);
+    //             await handleBiometricIoTConnectionFallbacks(this.env, this.orm, args);
     //             console.log("ddddddddddddddddddddd")
 
     //             this.model.root.context['iot_synced'] = true;
@@ -129,7 +128,7 @@ export class FingerprintUserFormController extends FormController {
                     extraData: extraData,
                 };
                 try {
-                    await handleBiometricIoTConnectionFallbacks2(this.env, this.orm, args);
+                    await handleBiometricIoTConnectionFallbacks(this.env, this.orm, args);
                     console.log("User deleted from IoT device successfully.");
 
                     // If IoT deletion is successful, proceed with Odoo record deletion

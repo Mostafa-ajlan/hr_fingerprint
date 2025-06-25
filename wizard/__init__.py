@@ -2,3 +2,4 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from . import add_fingerprint_device
+from . import sync_users_to_devices_wizard

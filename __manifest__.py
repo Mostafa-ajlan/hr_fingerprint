@@ -22,6 +22,7 @@
         'security/ir.model.access.csv',
         'views/main_menu.xml',
         'wizard/add_fingerprint_device_views.xml',
+        'wizard/sync_users_to_devices_wizard_view.xml',
         'views/hr_fingerprint_devices_view.xml',
         "views/zk_devices_command_views.xml",
         'views/hr_fingerprint_users_view.xml',
@@ -39,13 +40,15 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'hr_fingerprints/static/src/js/fingerprint_bus_service.js',
+            # 'hr_fingerprints/static/src/js/fingerprint_bus_service.js',
             'hr_fingerprints/static/src/js/iot_implement_action.js',
             'hr_fingerprints/static/src/js/fingerprint_button_action.js',
             'hr_fingerprints/static/src/xml/fingerprint_button_action.xml',
             'hr_fingerprints/static/src/js/fingerprint_user_form.js',
+            'hr_fingerprints/static/src/js/fingerprint_user_list.js',
             'hr_fingerprints/static/src/js/fingerprint_iot_event_listener.js',
             'hr_fingerprints/static/src/xml/fingerprint_iot_event_listener_widget.xml',
+            'hr_fingerprints/static/src/js/biometric_iot_websocket_service.js',
         ],
         "web.assets_qweb": [
         ],
