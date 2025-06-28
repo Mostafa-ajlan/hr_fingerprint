@@ -32,7 +32,6 @@ class FingerprintMachineAttendance(models.Model):
             ('3', _("Break In")),
             ('4', _("Overtime In")),
             ('5', _("Overtime Out")),
-            ('255', _("Duplicate"))
         ],
         string=_('Punching Type'),
         help=_('Punching type of the attendance')

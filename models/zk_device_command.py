@@ -17,7 +17,7 @@ class ZKDeviceCommand(models.Model):
         ('update_sms', _('Send SMS')),
         ('delete_userinfo', _('Delete User Info')),
         ('delete_sms', _('Delete SMS')),
-        ('query_attlog', _('Query Attendance Log')),
+        ('download_attendance', _('Query Attendance Log')),
         ('query_userinfo', _('Query User Info')),
         ('query_userpic', _('Query User picture')),
         ('clear_log', _('Clear Log')),
@@ -147,12 +147,12 @@ class ZKDeviceCommand(models.Model):
                 rec.generated_command = f'C:{c}:DATA DELETE USERINFO\tPIN={u}'
             elif rec.command_type == 'delete_sms':
                 rec.generated_command = f'C:{c}:DATA DELETE SMS\t{sms_uid}'
-            elif rec.command_type == 'query_attlog':
+            elif rec.command_type == 'download_attendance':
                 rec.generated_command = (
                     f'C:{c}:DATA QUERY ATTLOG\t'
                     f'{start_time}\t{end_time}'
                 )
-            elif rec.command_type == 'query_userinfo':
+            elif rec.command_type == 'fetch_user':
                 rec.generated_command = f'C:{c}:DATA QUERY USERINFO\tPIN={u}'
             elif rec.command_type == 'query_userpic':
                 rec.generated_command = f'C:{c}:DATA QUERY USERPIC\tPIN={u}'

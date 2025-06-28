@@ -585,6 +585,7 @@ class HrFingerprintDevice(models.Model):
         :return: قاموس يحتوي على نتيجة العملية
         """
         action_type = self.env.context.get('action_type')
+        print(action_type,"action_type")
         device = self.browse(device_id)
         
         if not device or not device.exists():
@@ -674,17 +675,18 @@ class HrFingerprintDevice(models.Model):
         try:
             # إنشاء أمر جديد للجهاز
             command_vals = {
+                'name': 'command by device',
                 'device_id': device.id,
-                'action_type': action_type,
-                'status': 'pending',
-                'created_by': self.env.user.id,
+                'command_type': action_type,
+                'state': 'pending',
+                'create_uid': self.env.user.id,
             }
             
             command = self.env['zk.device.command'].create(command_vals)
             
             # تحديث النتيجة
             result.update({
-                'status': 'pending',
+                'state': 'pending',
                 'message': _("Command queued for processing."),
                 'command_id': command.id
             })
