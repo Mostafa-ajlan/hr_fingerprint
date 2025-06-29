@@ -18,8 +18,8 @@ class ZKDeviceCommand(models.Model):
         ('delete_userinfo', _('Delete User Info')),
         ('delete_sms', _('Delete SMS')),
         ('download_attendance', _('Query Attendance Log')),
-        ('query_userinfo', _('Query User Info')),
-        ('query_userpic', _('Query User picture')),
+        ('fetch_user', _('Query User Info')),
+        ('download_template', _('Query User picture')),
         ('clear_log', _('Clear Log')),
         ('clear_data', _('Clear Data')),
         ('check', _('Check')),
@@ -104,7 +104,7 @@ class ZKDeviceCommand(models.Model):
     def _compute_generated_command(self):
         for rec in self:
             c = rec.cmd_id or '1'
-            u = rec.user_id or ''
+            u = f'PIN={rec.user_id}' if rec.user_id else ''
             name = f'Name={rec.name_value}' if rec.name_value else ''
             Passwd = f'Passwd={rec.password}' if rec.password else ''
             card = f'Card={rec.card}' if rec.card else ''
@@ -129,13 +129,13 @@ class ZKDeviceCommand(models.Model):
             if rec.command_type == 'update_userinfo':
                 rec.generated_command = (
                     f'C:{c}:DATA UPDATE USERINFO\t'
-                    f'PIN={u}\t{name}\t{Passwd}\t'
+                    f'{u}\t{name}\t{Passwd}\t'
                     f'{card}\t{group}\t{tz}\t{privilege}'
                 )
             elif rec.command_type == 'update_userpic':
                 rec.generated_command = (
                     f'C:{c}:DATA UPDATE USERPIC\t'
-                    f'PIN={u}\t{photo_size}\t{photo_content}'
+                    f'{u}\t{photo_size}\t{photo_content}'
                 )
             elif rec.command_type == 'update_sms':
                 rec.generated_command = (
@@ -144,7 +144,7 @@ class ZKDeviceCommand(models.Model):
                     f'{sms_min}\t{sms_start_time}'
                 )
             elif rec.command_type == 'delete_userinfo':
-                rec.generated_command = f'C:{c}:DATA DELETE USERINFO\tPIN={u}'
+                rec.generated_command = f'C:{c}:DATA DELETE USERINFO\t{u}'
             elif rec.command_type == 'delete_sms':
                 rec.generated_command = f'C:{c}:DATA DELETE SMS\t{sms_uid}'
             elif rec.command_type == 'download_attendance':
@@ -153,9 +153,9 @@ class ZKDeviceCommand(models.Model):
                     f'{start_time}\t{end_time}'
                 )
             elif rec.command_type == 'fetch_user':
-                rec.generated_command = f'C:{c}:DATA QUERY USERINFO\tPIN={u}'
-            elif rec.command_type == 'query_userpic':
-                rec.generated_command = f'C:{c}:DATA QUERY USERPIC\tPIN={u}'
+                rec.generated_command = f'C:{c}:DATA QUERY USERINFO\t{u}'
+            elif rec.command_type == 'download_template':
+                rec.generated_command = f'C:{c}:DATA QUERY USERPIC\t{u}'
             elif rec.command_type == 'clear_log':
                 rec.generated_command = f'C:{c}:CLEAR LOG'
             elif rec.command_type == 'clear_data':
