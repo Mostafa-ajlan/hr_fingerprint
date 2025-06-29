@@ -7,7 +7,7 @@ export const fingerprintIoTNotificationService = {
     dependencies: ['multi_tab', 'bus_service', 'orm', 'notification', 'action'],
 
     async start(_, { multi_tab, bus_service, orm, notification, action }) {
-        const iotChannel = await orm.call("iot.channel", "get_iot_channel", [0]);
+        const iotChannel = await orm.call("iot.fingerprint.channel", "get_iot_channel", [0]);
 
         if (!iotChannel) return;
 
@@ -40,6 +40,8 @@ export const fingerprintIoTNotificationService = {
         };
 
         const handleNotification = (message) => {
+            console.log("fingerprintIoTNotificationService")
+
             if (!multi_tab.isOnMainTab()) return;
 
             const actionMessages = {
@@ -52,6 +54,7 @@ export const fingerprintIoTNotificationService = {
                 reboot_device: 'The device %s has been successfully reboot.',
                 sync_time: 'The device %s has been successfully sync time.',
                 create_or_update_user: 'User/Users created or updated successfully to %s device.',
+                create_or_update_users: 'User/Users created or updated successfully to %s device.',
                 delete_user: 'User/Users deleted successfully from %s device.',
                 live_capture: 'Fingerprint registered from %s device. [Type: %s, Punch: %s]',
             };

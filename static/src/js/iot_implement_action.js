@@ -121,32 +121,38 @@ async function longpolling(env, orm, args) {
 
 export async function handleBiometricIoTConnectionFallbacks(env, orm, args) {
     args.extraData = args.extraData || {};
-    args.extraData.uuid = uuid(); // Add a unique identifier to the params
+    args.extraData.uuid = uuid();
     const connectionTypes = [
         () => longpolling(env, orm, args),
+        () => env.services.biometric_iot_websocket.addJob(args, false),
     ];
-    for (const connectionType of connectionTypes) {
-        try {
-            await connectionType();
-            return;
-        } catch {
-            console.log("iiiiiiiiiiiiiiiiiiiiiiii")
-            console.debug("Send action request failed, attempting another protocol.")
-        }
-    }
-
-}
-export async function handleBiometricIoTConnectionFallbacks2(env, orm, args) {
-    args.extraData = args.extraData || {};
-    args.extraData.uuid = uuid(); // Add a unique identifier to the params
     try {
-        await longpolling(env, orm, args);
-    } catch (error) {
-        console.log("iiiiiiiiiiiiiiiiiiiiiii")
-        // إذا فشل الاتصال، نرمي الاستثناء مباشرة ليتم منعه في الواجهة الأمامية
+        for (const connectionType of connectionTypes) {
+            try {
+                await connectionType();
+                return;
+            } catch {
+                console.debug("Send action request failed, attempting another protocol.")
+            }
+        }
+    } catch {
         throw error;
     }
+
+
 }
+
+// export async function handleBiometricIoTConnectionFallbacks2(env, orm, args) {
+//     args.extraData = args.extraData || {};
+//     args.extraData.uuid = uuid();
+//     try {
+//         await longpolling(env, orm, args);
+//     } catch (error) {
+//         console.log("iiiiiiiiiiiiiiiiiiiiiii")
+//         // إذا فشل الاتصال، نرمي الاستثناء مباشرة ليتم منعه في الواجهة الأمامية
+
+//     }
+// }
 
 
 
