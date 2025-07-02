@@ -139,13 +139,13 @@ class SyncUsersToDevicesWizard(models.TransientModel):
         for user in users_to_add:
             vals = self._prepare_user_values(user, device.id)
             try:
-                self.env['fingerprint.device.command'].create({
-                    'device_id': device.id,
-                    'action_type': 'add_user',
-                    'status': 'pending',
-                    'created_by': self.env.user.id,
-                    'command_data': vals,
-                })
+                vals['command_type'] = 'update_userinfo'
+                vals['state'] = 'pending'
+                vals['name_value'] = vals['name'] 
+                vals['name'] = 'add user'
+                vals['create_uid'] = self.env.user.id
+                self.env['zk.device.command'].create(vals)
+                self.env.cr.commit()
                 results.append(_("تمت جدولة إضافة المستخدم %s للجهاز %s (push)") % (user.name, device.name))
             except Exception as e:
                 _logger.exception("Push sync failed")
@@ -168,6 +168,7 @@ class SyncUsersToDevicesWizard(models.TransientModel):
             elif device.connection_mode == 'iot':
                 self._handle_iot_sync(device, users_to_add, results)
             elif device.connection_mode == 'push':
+                print(users_to_add,"users_to_addusers_to_addusers_to_add")
                 self._handle_push_sync(device, users_to_add, results)
             else:
                 results.append(_("نوع الاتصال غير مدعوم للجهاز %s") % device.name)

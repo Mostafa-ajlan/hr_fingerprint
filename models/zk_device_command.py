@@ -29,7 +29,8 @@ class ZKDeviceCommand(models.Model):
         ('reload_option', _('Reload Option')),
         ('info', _('Info')),
         ('enroll_fp', _('Enroll Fingerprint')),
-        ('reboot', _('Reboot')),
+        ('reboot_device', _('Reboot')),
+        ('shutdown_device', _('Shutdown Device')),
         ('unlock', _('Unlock Door')),
         ('unalarm', _('Unalarm')),
         ('shell', _('Shell Command')),
@@ -179,7 +180,7 @@ class ZKDeviceCommand(models.Model):
                 rec.generated_command = (
                     f'C:{c}:ENROLL_FP\tPIN={u}\t{fp_id}\t{retry}\t{overwrite}'
                 )
-            elif rec.command_type == 'reboot':
+            elif rec.command_type == 'reboot_device':
                 rec.generated_command = f'C:{c}:REBOOT'
             elif rec.command_type == 'unlock':
                 rec.generated_command = f'C:{c}:AC_UNLOCK'
